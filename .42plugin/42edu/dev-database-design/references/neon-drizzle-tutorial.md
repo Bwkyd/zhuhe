@@ -124,24 +124,26 @@ mcp__plugin_neon-plugin_neon__get_connection_string
 ### 运行时依赖
 
 ```bash
-bun add drizzle-orm @neondatabase/serverless
+bun add drizzle-orm @neondatabase/serverless ws
 ```
 
 | 包名 | 用途 |
 |------|------|
 | `drizzle-orm` | ORM 核心，提供类型安全的查询构建 |
 | `@neondatabase/serverless` | Neon 的 Serverless 驱动，支持 Edge 运行时 |
+| `ws` | WebSocket 库，Node.js < v22 需要（用于持久连接） |
 
 ### 开发依赖
 
 ```bash
-bun add -D drizzle-kit dotenv
+bun add -D drizzle-kit dotenv @types/ws
 ```
 
 | 包名 | 用途 |
 |------|------|
 | `drizzle-kit` | CLI 工具，生成迁移、推送 Schema |
 | `dotenv` | 加载 .env 文件中的环境变量 |
+| `@types/ws` | ws 库的 TypeScript 类型定义 |
 
 ---
 
@@ -154,7 +156,7 @@ bun add -D drizzle-kit dotenv
 # Project: 你的项目名
 # Branch: dev (development)
 
-DATABASE_URL="postgresql://用户:密码@主机/数据库?sslmode=require"
+DATABASE_URL="postgresql://用户:密码@主机/数据库?sslmode=require&channel_binding=require"
 
 # Neon Project Info（可选，方便后续操作）
 NEON_PROJECT_ID="你的项目ID"
@@ -187,22 +189,55 @@ export default defineConfig({
 
 ### 4.3 创建数据库连接文件
 
+Neon 提供两种连接方式，根据应用类型选择：
+
+#### 方式一：HTTP 适配器（推荐用于 Serverless/Edge）
+
+适用于 Next.js、Vercel Edge Functions、AWS Lambda 等短生命周期环境。
+
 `src/db/index.ts`：
 
 ```typescript
 import { drizzle } from 'drizzle-orm/neon-http';
 import { neon } from '@neondatabase/serverless';
 
-// 创建 Neon SQL 客户端
+// 创建 Neon HTTP 客户端
 const sql = neon(process.env.DATABASE_URL!);
 
 // 导出 Drizzle 实例
 export const db = drizzle(sql);
 ```
 
-**为什么用 `neon-http`？**
-- Next.js、Vercel Edge 等 Serverless 环境使用 HTTP 适配器
-- 普通 Node.js 服务器可以用 WebSocket 适配器（需要额外配置）
+#### 方式二：WebSocket 适配器（用于长运行服务）
+
+适用于传统 Node.js 服务器、需要事务支持的场景。
+
+`src/db/index.ts`：
+
+```typescript
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import ws from 'ws';
+
+// Node.js < v22 需要配置 WebSocket 构造函数
+neonConfig.webSocketConstructor = ws;
+
+// 创建连接池
+const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
+
+// 导出 Drizzle 实例
+export const db = drizzle(pool);
+```
+
+**如何选择？**
+
+| 特性 | HTTP 适配器 | WebSocket 适配器 |
+|------|------------|-----------------|
+| 适用环境 | Serverless/Edge | 传统 Node.js 服务器 |
+| 连接方式 | 每次查询新连接 | 持久连接池 |
+| 事务支持 | 单语句事务 | 完整事务支持 |
+| 冷启动延迟 | 更低 | 略高 |
+| 推荐场景 | Next.js、Vercel | Express、Fastify |
 
 ---
 
@@ -219,7 +254,7 @@ export const db = drizzle(sql);
 ```typescript
 import {
   pgTable,
-  serial,
+  integer,
   text,
   timestamp,
   varchar,
@@ -228,7 +263,7 @@ import {
 
 // 用户表
 export const users = pgTable('users', {
-  id: serial('id').primaryKey(),
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   name: varchar('name', { length: 255 }).notNull(),
   createdAt: timestamp('created_at').defaultNow(),
@@ -237,8 +272,8 @@ export const users = pgTable('users', {
 
 // 会话表
 export const sessions = pgTable('sessions', {
-  id: serial('id').primaryKey(),
-  userId: serial('user_id')
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer('user_id')
     .notNull()
     .references(() => users.id),
   token: text('token').notNull().unique(),
@@ -246,13 +281,20 @@ export const sessions = pgTable('sessions', {
   createdAt: timestamp('created_at').defaultNow(),
   expiresAt: timestamp('expires_at'),
 });
+
+// 导出类型（用于 TypeScript 类型安全）
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+export type Session = typeof sessions.$inferSelect;
+export type NewSession = typeof sessions.$inferInsert;
 ```
 
 ### Schema 字段类型速查
 
 | Drizzle 类型 | PostgreSQL 类型 | 用途 |
 |-------------|-----------------|------|
-| `serial` | SERIAL | 自增整数主键 |
+| `integer().generatedAlwaysAsIdentity()` | INTEGER GENERATED ALWAYS AS IDENTITY | 自增整数主键（推荐） |
+| `serial` | SERIAL | 自增整数（旧语法，仍可用） |
 | `uuid` | UUID | UUID 主键 |
 | `varchar` | VARCHAR | 变长字符串 |
 | `text` | TEXT | 长文本 |
@@ -260,6 +302,15 @@ export const sessions = pgTable('sessions', {
 | `timestamp` | TIMESTAMP | 时间戳 |
 | `integer` | INTEGER | 整数 |
 | `jsonb` | JSONB | JSON 数据 |
+
+### 主键策略选择
+
+| 策略 | 优点 | 缺点 | 适用场景 |
+|------|------|------|----------|
+| `integer().generatedAlwaysAsIdentity()` | 存储小、索引快、排序有序 | 可预测、易枚举 | 内部表、不暴露给用户的 ID |
+| `uuid` | 不可预测、全局唯一 | 存储大、索引慢、无序 | 对外 API、需要安全性的场景 |
+
+> ⚠️ **安全提示**：自增 ID 容易被猜测和枚举（如 `/api/users/1`, `/api/users/2`）。对于暴露给用户的资源 ID，建议使用 UUID。但请注意，UUID 本身不是权限控制手段，仍需在业务逻辑中验证访问权限。
 
 ---
 
@@ -368,7 +419,7 @@ mcp__plugin_neon-plugin_neon__provision_neon_auth
 NEXT_PUBLIC_NEON_AUTH_URL=https://ep-xxx.neonauth.us-east-2.aws.neon.build/neondb/auth
 
 # 数据库连接
-DATABASE_URL="postgresql://用户:密码@主机/数据库?sslmode=require"
+DATABASE_URL="postgresql://用户:密码@主机/数据库?sslmode=require&channel_binding=require"
 ```
 
 ### 分支未继承 neon_auth 的处理
@@ -580,6 +631,78 @@ DATABASE_POOL_SIZE=10
 
 ---
 
+## 查询最佳实践
+
+### 批量操作优化
+
+在 Neon Serverless 环境中，批量操作比多次单独操作更高效：
+
+```typescript
+import { db } from './db';
+import { users, type NewUser } from './schema';
+
+// ✅ 推荐：批量插入
+async function batchInsertUsers(newUsers: NewUser[]) {
+  return db.insert(users).values(newUsers).returning();
+}
+
+// ❌ 避免：循环单独插入
+async function slowInsertUsers(newUsers: NewUser[]) {
+  for (const user of newUsers) {
+    await db.insert(users).values(user);  // 每次都是一个 HTTP 请求
+  }
+}
+```
+
+### 事务处理
+
+使用 WebSocket 适配器时支持完整事务：
+
+```typescript
+import { db } from './db';
+import { users, sessions } from './schema';
+
+async function createUserWithSession(userData: NewUser) {
+  return await db.transaction(async (tx) => {
+    // 创建用户
+    const [newUser] = await tx.insert(users).values(userData).returning();
+
+    // 创建会话
+    await tx.insert(sessions).values({
+      userId: newUser.id,
+      token: crypto.randomUUID(),
+    });
+
+    return newUser;
+  });
+}
+```
+
+> ⚠️ **注意**：HTTP 适配器（`neon-http`）不支持跨语句事务，每个语句都是独立的。需要事务时请使用 WebSocket 适配器。
+
+### 预编译语句
+
+对于频繁执行的查询，使用预编译语句提升性能：
+
+```typescript
+import { db } from './db';
+import { users } from './schema';
+import { eq, sql } from 'drizzle-orm';
+
+// 预编译查询
+const getUserByEmailPrepared = db.select()
+  .from(users)
+  .where(eq(users.email, sql.placeholder('email')))
+  .prepare('get_user_by_email');
+
+// 使用预编译查询
+async function getUserByEmail(email: string) {
+  return getUserByEmailPrepared.execute({ email });
+}
+```
+
+---
+
 ## 目录结构总览
 
 ```
@@ -602,3 +725,4 @@ your-project/
 |------|----------|
 | 2025-12-19 | 初稿 |
 | 2025-12-19 | 添加分支命名规范、生产环境配置最佳实践 |
+| 2025-12-24 | 连接字符串添加 `channel_binding`，添加 `ws` 依赖，更新主键语法为 `generatedAlwaysAsIdentity()`，补充 WebSocket 适配器配置、事务处理、批量操作最佳实践 |

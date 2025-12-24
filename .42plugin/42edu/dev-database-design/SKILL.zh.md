@@ -101,14 +101,15 @@ generates:
 
 | 用途 | PostgreSQL类型 | 说明 |
 |------|----------------|------|
-| 主键 | UUID | 使用gen_random_uuid() |
-| 短文本 | VARCHAR(N) | 指定最大长度 |
-| 长文本 | TEXT | 无限长度 |
-| JSON数据 | JSONB | 用于灵活模式 |
-| 布尔值 | BOOLEAN | true/false |
-| 整数 | INTEGER | 标准整型 |
-| 时间戳 | TIMESTAMP | 不带时区 |
-| 枚举 | VARCHAR | 或PostgreSQL ENUM |
+| 主键（内部） | SERIAL/INTEGER | 使用 serial() 或 integer().generatedAlwaysAsIdentity()，易被枚举，不应直接暴露给外部 API |
+| 主键（公开） | UUID | 使用 uuid().defaultRandom()，更难枚举，但不是权限控制手段 |
+| 短文本 | VARCHAR(N) | 指定最大长度 | - |
+| 长文本 | TEXT | 无限长度 | - |
+| JSON数据 | JSONB | 用于灵活模式 | - |
+| 布尔值 | BOOLEAN | true/false | - |
+| 整数 | INTEGER | 标准整型 | - |
+| 时间戳 | TIMESTAMP | 不带时区 | - |
+| 枚举 | VARCHAR | 或PostgreSQL ENUM | - |
 
 ### 阶段三：设计索引
 
@@ -133,9 +134,10 @@ generates:
 **直接输出 Drizzle 模式代码：**
 
 ```typescript
-// lib/db/schema.ts
+// src/db/schema.ts
 import {
   pgTable,
+  serial,
   uuid,
   varchar,
   text,
@@ -143,10 +145,10 @@ import {
   boolean,
   jsonb,
   integer,
-  uniqueIndex,
   index
 } from 'drizzle-orm/pg-core';
 
+// 推荐：公开资源使用 UUID 主键（防止枚举攻击）
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: varchar('email', { length: 255 }).notNull().unique(),
@@ -157,6 +159,8 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+// 内部资源可使用 serial（性能更好）
+// 注意：如果通过 API 暴露，也应使用 UUID
 export const conversations = pgTable('conversations', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id),
@@ -179,6 +183,13 @@ export const messages = pgTable('messages', {
 }, (table) => ({
   convIdx: index('idx_messages_conversation').on(table.conversationId),
 }));
+
+// 仅内部使用的表可使用 serial
+// 例如：审计日志、系统配置等不对外暴露的表
+// export const auditLogs = pgTable('audit_logs', {
+//   id: serial('id').primaryKey(),
+//   ...
+// });
 ```
 
 ### 阶段五：生成类型和 Zod 验证
@@ -186,7 +197,7 @@ export const messages = pgTable('messages', {
 **类型导出：**
 
 ```typescript
-// lib/db/types.ts
+// src/db/types.ts
 import { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 import { users, conversations, messages } from './schema';
 
@@ -203,7 +214,7 @@ export type NewMessage = InferInsertModel<typeof messages>;
 **Zod 验证模式：**
 
 ```typescript
-// lib/validations/user.ts
+// src/lib/validations/user.ts
 import { z } from 'zod';
 
 export const createUserSchema = z.object({
@@ -276,6 +287,13 @@ bunx drizzle-kit studio
 - [ ] 需要灵活性时使用 JSONB
 - [ ] 类型导出完整
 - [ ] Zod 验证与 schema 对应
+
+### 安全性检查
+- [ ] 公开 API 暴露的表使用 UUID 主键（防止枚举攻击）
+- [ ] 内部表可使用 serial 主键（性能优先）
+- [ ] 不依赖 ID 不可猜测性作为权限控制手段
+- [ ] 敏感数据字段已加密或哈希处理
+- [ ] 所有公开端点都有权限验证逻辑
 
 ## 与其他技能的关系
 

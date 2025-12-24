@@ -174,6 +174,10 @@ src/db/
 
 ```typescript
 import { defineConfig } from 'drizzle-kit';
+import { config } from 'dotenv';
+
+// 显式加载 .env 文件
+config({ path: '.env' });
 
 export default defineConfig({
   schema: './src/db/schema.ts',
@@ -216,12 +220,19 @@ export const yourTable = pgTable('your_table', {
   userId: text('user_id')
     .notNull()
     .references(() => usersSync.id),
-  
+
 
   // 其他字段...
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 ```
+
+> **为什么业务表使用 UUID 主键？**
+> - **安全性**：UUID 不可预测，防止资源 ID 被枚举（如 `/api/posts/1`, `/api/posts/2`）
+> - **分布式友好**：无需中心化 ID 生成器，适合微服务架构
+> - **Neon Auth 兼容**：`usersSync.id` 本身是 `text` 类型，可能是 UUID 格式
+>
+> 注意：UUID 本身不是权限控制手段，仍需验证用户对资源的访问权限。
 
 ### 常见关联场景
 
@@ -682,3 +693,4 @@ Neon Auth 生产环境检查清单：
 | 2025-12-19 | 初稿 |
 | 2025-12-19 | 更新为 Better Auth 版本，补充 users_sync 表结构和 rawJson 字段 |
 | 2025-12-19 | 添加生产环境配置最佳实践、关键顺序要求 |
+| 2025-12-24 | drizzle.config.ts 添加 dotenv 加载，补充 UUID 主键策略说明 |

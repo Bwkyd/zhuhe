@@ -101,14 +101,15 @@ Identify from the cognitive model (cog.md):
 
 | Purpose | PostgreSQL Type | Notes |
 |---------|-----------------|-------|
-| Primary key | UUID | Use gen_random_uuid() |
-| Short text | VARCHAR(N) | Specify max length |
-| Long text | TEXT | Unlimited length |
-| JSON data | JSONB | For flexible schemas |
-| Boolean | BOOLEAN | true/false |
-| Integer | INTEGER | Standard integer |
-| Timestamp | TIMESTAMP | Without timezone |
-| Enum | VARCHAR | Or PostgreSQL ENUM |
+| Primary key (internal) | SERIAL/INTEGER | Use serial() or integer().generatedAlwaysAsIdentity(), Easily enumerable, should not be exposed to external APIs |
+| Primary key (public) | UUID | Use uuid().defaultRandom(), Harder to enumerate, but not a permission control mechanism |
+| Short text | VARCHAR(N) | Specify max length | - |
+| Long text | TEXT | Unlimited length | - |
+| JSON data | JSONB | For flexible schemas | - |
+| Boolean | BOOLEAN | true/false | - |
+| Integer | INTEGER | Standard integer | - |
+| Timestamp | TIMESTAMP | Without timezone | - |
+| Enum | VARCHAR | Or PostgreSQL ENUM | - |
 
 ### Phase 3: Design Indexes
 
@@ -133,9 +134,10 @@ Identify from the cognitive model (cog.md):
 **Output Drizzle schema code directly:**
 
 ```typescript
-// lib/db/schema.ts
+// src/db/schema.ts
 import {
   pgTable,
+  serial,
   uuid,
   varchar,
   text,
@@ -143,10 +145,10 @@ import {
   boolean,
   jsonb,
   integer,
-  uniqueIndex,
   index
 } from 'drizzle-orm/pg-core';
 
+// Recommended: Use UUID primary keys for public resources (prevents enumeration attacks)
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: varchar('email', { length: 255 }).notNull().unique(),
@@ -157,6 +159,8 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+// Internal resources can use serial (better performance)
+// Note: If exposed via API, should also use UUID
 export const conversations = pgTable('conversations', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id),
@@ -179,6 +183,13 @@ export const messages = pgTable('messages', {
 }, (table) => ({
   convIdx: index('idx_messages_conversation').on(table.conversationId),
 }));
+
+// Tables used only internally can use serial
+// Examples: audit logs, system configurations, etc. that are not exposed externally
+// export const auditLogs = pgTable('audit_logs', {
+//   id: serial('id').primaryKey(),
+//   ...
+// });
 ```
 
 ### Phase 5: Generate Types and Zod Validations
@@ -186,7 +197,7 @@ export const messages = pgTable('messages', {
 **Type Exports:**
 
 ```typescript
-// lib/db/types.ts
+// src/db/types.ts
 import { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 import { users, conversations, messages } from './schema';
 
@@ -203,7 +214,7 @@ export type NewMessage = InferInsertModel<typeof messages>;
 **Zod Validation Schemas:**
 
 ```typescript
-// lib/validations/user.ts
+// src/lib/validations/user.ts
 import { z } from 'zod';
 
 export const createUserSchema = z.object({
@@ -276,6 +287,13 @@ If user says "please also generate design documentation" or "I need spec-databas
 - [ ] JSONB used where flexibility is needed
 - [ ] Type exports are complete
 - [ ] Zod validations correspond to schema
+
+### Security Checks
+- [ ] Tables exposed via public API use UUID primary keys (prevents enumeration attacks)
+- [ ] Internal tables can use serial primary keys (performance priority)
+- [ ] Do not rely on ID unpredictability as a permission control mechanism
+- [ ] Sensitive data fields are encrypted or hashed
+- [ ] All public endpoints have permission verification logic
 
 ## Relationship with Other Skills
 
