@@ -317,7 +317,7 @@ function example4_expiration() {
 // ============================================================================
 
 /**
- * 真实应用中的 Session 获取（使用 Better Auth SDK）
+ * 真实应用中的 Session 获取（使用 Neon Auth SDK）
  *
  * 示例代码（不可运行）：
  */
@@ -327,49 +327,78 @@ function realWorldExample() {
   console.log(`
 在真实的 Next.js + Neon Auth 应用中：
 
-1. 服务端获取 Session：
+1. 服务端获取 Session（Server Component 或 API Route 中）：
 
-   import { auth } from '@/lib/auth'; // Better Auth 实例
+   import { neonAuth } from '@neondatabase/neon-js/auth/next';
 
+   // Server Component 中
+   export default async function ProfilePage() {
+     const { session, user } = await neonAuth();
+
+     if (!session || !user) {
+       redirect('/auth/sign-in');
+     }
+
+     return <div>Welcome, {user.name}!</div>;
+   }
+
+   // API Route Handler 中
    export async function GET(request: Request) {
-     const session = await auth.api.getSession({
-       headers: request.headers,
-     });
+     const { session, user } = await neonAuth();
 
-     if (!session) {
+     if (!session || !user) {
        return Response.json({ error: 'Unauthorized' }, { status: 401 });
      }
 
-     const userId = session.user.id; // 从 Session 获取用户 ID
+     const userId = user.id; // 从 Session 获取用户 ID
      // ... 业务逻辑
    }
 
-2. 客户端获取 Session：
+2. 客户端获取 Session（Client Component 中）：
 
-   import { useSession } from '@/lib/auth-client';
+   'use client';
+
+   import { createAuthClient } from '@neondatabase/neon-js/auth/next';
+
+   const authClient = createAuthClient();
 
    function MyComponent() {
-     const { data: session, isPending } = useSession();
+     const [session, setSession] = useState(null);
+     const [user, setUser] = useState(null);
+     const [loading, setLoading] = useState(true);
 
-     if (isPending) return <div>Loading...</div>;
+     useEffect(() => {
+       authClient.getSession().then((result) => {
+         if (result.data?.session && result.data?.user) {
+           setSession(result.data.session);
+           setUser(result.data.user);
+         }
+         setLoading(false);
+       });
+     }, []);
+
+     if (loading) return <div>Loading...</div>;
      if (!session) return <div>Not logged in</div>;
 
-     return <div>Welcome, {session.user.name}!</div>;
+     return <div>Welcome, {user.name}!</div>;
    }
 
-3. 中间件保护路由：
+3. 中间件保护路由（middleware.ts 或 proxy.ts）：
 
-   import { auth } from '@/lib/auth';
+   import { neonAuthMiddleware } from '@neondatabase/neon-js/auth/next';
 
-   export default auth.middleware(async (request) => {
-     const session = request.auth;
-
-     if (!session) {
-       return Response.redirect(new URL('/login', request.url));
-     }
-
-     return NextResponse.next();
+   export default neonAuthMiddleware({
+     // 未认证用户重定向到登录页
+     loginUrl: '/auth/sign-in',
    });
+
+   export const config = {
+     matcher: [
+       // 需要认证的路由
+       '/account/:path*',
+       '/dashboard/:path*',
+     ],
+   };
   `);
 }
 

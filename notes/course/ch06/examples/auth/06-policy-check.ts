@@ -615,17 +615,17 @@ function realWorldExample() {
 
    'use server';
 
-   import { auth } from '@/lib/auth';
+   import { neonAuth } from '@neondatabase/neon-js/auth/next';
    import { checkConversationPolicy } from '@/lib/auth/policy';
 
    export async function deleteConversation(conversationId: string) {
-     const session = await auth();
-     if (!session) {
+     const { session, user } = await neonAuth();
+     if (!session || !user) {
        throw new Error('Unauthorized');
      }
 
      const result = await checkConversationPolicy(
-       session.user.id,
+       user.id,
        conversationId,
        'delete'
      );
@@ -638,7 +638,7 @@ function realWorldExample() {
 
      // 记录操作日志
      await db.insert(operationLogs).values({
-       operatorId: session.user.id,
+       operatorId: user.id,
        operationType: 'delete',
        resourceType: 'conversation',
        resourceId: conversationId,
@@ -649,17 +649,20 @@ function realWorldExample() {
 
 3. 在 API 路由中使用：
 
+   import { neonAuth } from '@neondatabase/neon-js/auth/next';
+   import { checkConversationPolicy } from '@/lib/auth/policy';
+
    export async function DELETE(
      request: Request,
      { params }: { params: { id: string } }
    ) {
-     const session = await auth.api.getSession({ headers: request.headers });
-     if (!session) {
+     const { session, user } = await neonAuth();
+     if (!session || !user) {
        return Response.json({ error: 'Unauthorized' }, { status: 401 });
      }
 
      const result = await checkConversationPolicy(
-       session.user.id,
+       user.id,
        params.id,
        'delete'
      );

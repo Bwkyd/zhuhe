@@ -442,67 +442,55 @@ function realWorldExample() {
   console.log(`
 在真实的 Next.js + Neon Auth 应用中：
 
-1. 中间件保护路由（middleware.ts）：
+1. 中间件保护路由（proxy.ts 或 middleware.ts）：
 
-   import { auth } from '@/lib/auth';
+   import { neonAuthMiddleware } from '@neondatabase/neon-js/auth/next';
 
-   export default auth.middleware(async (request) => {
-     const session = request.auth;
-
-     // 公开路径
-     const publicPaths = ['/login', '/signup', '/about'];
-     if (publicPaths.some((path) => request.nextUrl.pathname.startsWith(path))) {
-       return NextResponse.next();
-     }
-
-     // 需要认证
-     if (!session) {
-       return NextResponse.redirect(
-         new URL(\`/login?returnUrl=\${request.nextUrl.pathname}\`, request.url)
-       );
-     }
-
-     return NextResponse.next();
+   export default neonAuthMiddleware({
+     // 未认证用户重定向到登录页
+     loginUrl: '/auth/sign-in',
    });
 
    export const config = {
-     matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+     matcher: [
+       // 需要认证的路由
+       '/account/:path*',
+       '/dashboard/:path*',
+     ],
    };
 
 2. Server Component 中检查认证（app/dashboard/page.tsx）：
 
-   import { auth } from '@/lib/auth';
+   import { neonAuth } from '@neondatabase/neon-js/auth/next';
    import { redirect } from 'next/navigation';
 
    export default async function DashboardPage() {
-     const session = await auth();
+     const { session, user } = await neonAuth();
 
-     if (!session) {
-       redirect('/login');
+     if (!session || !user) {
+       redirect('/auth/sign-in');
      }
 
      return (
        <div>
-         <h1>Welcome, {session.user.name}!</h1>
+         <h1>Welcome, {user.name}!</h1>
        </div>
      );
    }
 
 3. API 路由保护（app/api/conversations/route.ts）：
 
-   import { auth } from '@/lib/auth';
+   import { neonAuth } from '@neondatabase/neon-js/auth/next';
 
    export async function GET(request: Request) {
-     const session = await auth.api.getSession({
-       headers: request.headers,
-     });
+     const { session, user } = await neonAuth();
 
-     if (!session) {
+     if (!session || !user) {
        return Response.json({ error: 'Unauthorized' }, { status: 401 });
      }
 
      const conversations = await db.query.conversations.findMany({
-       where: eq(conversations.userId, session.user.id),
+       where: eq(conversations.userId, user.id),
      });
 
      return Response.json({ conversations });
@@ -512,38 +500,53 @@ function realWorldExample() {
 
    'use client';
 
-   import { useSession } from '@/lib/auth-client';
+   import { createAuthClient } from '@neondatabase/neon-js/auth/next';
    import { useRouter } from 'next/navigation';
+   import { useState, useEffect } from 'react';
+
+   const authClient = createAuthClient();
 
    export default function ClientComponent() {
-     const { data: session, isPending } = useSession();
+     const [session, setSession] = useState(null);
+     const [user, setUser] = useState(null);
+     const [loading, setLoading] = useState(true);
      const router = useRouter();
 
-     if (isPending) return <div>Loading...</div>;
+     useEffect(() => {
+       authClient.getSession().then((result) => {
+         if (result.data?.session && result.data?.user) {
+           setSession(result.data.session);
+           setUser(result.data.user);
+         }
+         setLoading(false);
+       });
+     }, []);
+
+     if (loading) return <div>Loading...</div>;
 
      if (!session) {
-       router.push('/login');
+       router.push('/auth/sign-in');
        return null;
      }
 
-     return <div>Welcome, {session.user.name}!</div>;
+     return <div>Welcome, {user.name}!</div>;
    }
 
 5. Server Action 保护（app/actions/conversations.ts）：
 
    'use server';
 
-   import { auth } from '@/lib/auth';
+   import { neonAuth } from '@neondatabase/neon-js/auth/next';
 
    export async function createConversation(title: string) {
-     const session = await auth();
+     const { session, user } = await neonAuth();
 
-     if (!session) {
+     if (!session || !user) {
        throw new Error('Unauthorized');
      }
 
      const conversation = await db.insert(conversations).values({
-       userId: session.user.id,
+       userId: user.id,
        title,
      });
 

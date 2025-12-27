@@ -33,129 +33,128 @@ Neon Auth 是 Neon 提供的托管认证服务，基于 [Better Auth](https://be
 ### 两个 Schema 的关系
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     Neon Database                           │
-├─────────────────────────┬───────────────────────────────────┤
-│     neon_auth schema    │         public schema             │
-│   (系统管理，不可修改)     │      (业务表，你来设计)            │
-├─────────────────────────┼───────────────────────────────────┤
-│ • user (敏感认证数据)     │ • user_profiles                  │
-│ • account (OAuth 账号)   │ • conversations                  │
-│ • session (会话)         │ • messages                       │
-│ • verification          │ • api_keys                       │
-│ • organization          │ • groups                         │
-│ • member                │ • ...                            │
-│ • jwks                  │                                   │
-│ • project_config        │                                   │
-│ • invitation            │                                   │
-│ • users_sync ◄──────────┼─── 外键引用点                      │
-└─────────────────────────┴───────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                     Neon Database                            │
+├──────────────────────────┬───────────────────────────────────┤
+│     neon_auth schema     │         public schema             │
+│  (Neon Auth管理，不可修改) │      (业务表，你来设计)            │
+├──────────────────────────┼───────────────────────────────────┤
+│ • user ◄─────────────────┼─── 外键引用点                      │
+│   (用户核心信息)          │                                   │
+│ • account                │ • user_profiles                   │
+│   (密码 + OAuth tokens)   │ • conversations                   │
+│ • session (会话)          │ • messages                        │
+│ • verification           │ • api_keys                        │
+│   (邮箱验证、密码重置)     │ • groups                          │
+│                          │ • ...                             │
+└──────────────────────────┴───────────────────────────────────┘
 ```
 
-### neon_auth 表说明
+### neon_auth 表说明（共 9 个表）
 
-| 表名 | 用途 | 是否可直接查询 |
-|------|------|--------------|
-| `user` | 用户核心数据（密码哈希、OAuth 信息） | 不建议 |
-| `account` | OAuth 账号关联 | 不建议 |
-| `session` | 用户会话 | 不建议 |
-| `verification` | 验证码/邮箱验证 | 不建议 |
-| `organization` | 组织/团队 | 可以 |
-| `member` | 组织成员 | 可以 |
-| `jwks` | JWT 密钥存储 | 不建议 |
-| `project_config` | 项目配置 | 可以 |
-| `invitation` | 邀请记录 | 可以 |
-| **`users_sync`** | **用户同步表（外键关联专用）** | **推荐** |
+**核心表（4 个）**：Better Auth 框架自动创建
 
-### 为什么用 users_sync 而不是 user？
+| 表名 | 用途 | 说明 |
+|------|------|------|
+| `user` | **用户基本信息** | **业务表应关联此表的 id** |
+| `account` | 认证凭证 | 密码哈希、OAuth tokens，由 Better Auth 管理 |
+| `session` | 用户会话 | 由 Better Auth 自动管理 |
+| `verification` | 验证令牌 | 邮箱验证、密码重置 |
 
-| 对比 | `neon_auth.user` | `neon_auth.users_sync` |
-|------|------------------|----------------------|
-| 数据敏感度 | 高（含密码哈希） | 低（仅基本信息） |
-| 设计目的 | 认证系统内部 | 业务表外键关联 |
-| 字段 | id, email, password, ... | id, name, email, raw_json, created_at, deleted_at |
-| 推荐用途 | 认证逻辑 | 业务外键 |
-| 自动同步 | - | 由 Neon Auth 自动维护 |
+**Organization 插件表（3 个）**：Neon Auth 默认启用的多租户支持
 
-### users_sync 表结构
+| 表名 | 用途 | 说明 |
+|------|------|------|
+| `organization` | 组织/团队 | 多租户支持 |
+| `member` | 组织成员 | 用户-组织多对多关系 |
+| `invitation` | 组织邀请 | 待接受的邀请记录 |
 
-启用 Neon Auth 后，`neon_auth.users_sync` 表会**自动创建**，结构如下：
+**Neon 特有表（2 个）**：Neon 平台扩展
+
+| 表名 | 用途 | 说明 |
+|------|------|------|
+| `jwks` | JWT 公钥 | 用于 RLS 策略验证 JWT |
+| `project_config` | 项目配置 | Neon Auth 配置存储 |
+
+### neon_auth.user 表结构
+
+`neon_auth.user` 表由 Neon Auth (Better Auth) 自动创建和管理，包含以下字段：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `id` | text (PK) | 用户唯一标识，用于外键引用 |
-| `name` | text | 用户显示名称 |
-| `email` | text | 用户邮箱 |
-| `raw_json` | jsonb | 完整的用户原始数据（含 OAuth 信息等） |
-| `created_at` | timestamptz | 用户创建时间 |
-| `deleted_at` | timestamptz | 软删除时间（未删除时为 null） |
+| `id` | text (PK) | 用户唯一标识，业务表外键关联此字段 |
+| `email` | text (UNIQUE) | 用户邮箱 |
+| `emailVerified` | boolean | 邮箱是否已验证 |
+| `name` | text | 用户名 |
+| `image` | text | 头像 URL |
+| `createdAt` | timestamp | 用户创建时间 |
+| `updatedAt` | timestamp | 用户最后更新时间 |
 
-Drizzle ORM 内置的 `usersSync` 助手定义：
-
-```typescript
-// drizzle-orm/neon 内部定义
-const neonAuthSchema = pgSchema('neon_auth');
-
-export const usersSync = neonAuthSchema.table('users_sync', {
-  id: text().primaryKey().notNull(),
-  name: text(),
-  email: text(),
-  rawJson: jsonb('raw_json').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }),
-  deletedAt: timestamp('deleted_at', { withTimezone: true }),
-});
-```
+**关键要点：**
+- `neon_auth.user` 存储用户基本信息，**安全可靠，可直接关联**
+- 密码和 OAuth tokens 存储在 `neon_auth.account` 表，与 `user` 表分离
+- Better Auth 自动维护这两个表的关系
+- 业务表应该**直接关联 `neon_auth.user.id`**
 
 ---
 
 ## Schema 设计原则
 
-### 原则 1：使用 usersSync 助手
+### 原则 1：定义 neon_auth.user 的引用
 
-Drizzle ORM 提供了官方的 `usersSync` 助手，用于引用 `neon_auth.users_sync` 表。
-
-```typescript
-// 正确：从 drizzle-orm/neon 导入
-import { usersSync } from 'drizzle-orm/neon';
-
-// 错误：手动定义 neon_auth 表
-// const users = pgTable('neon_auth.user', ...); // 不要这样做
-```
-
-### 原则 2：不导出 usersSync
-
-`usersSync` 仅用于建立外键引用，不要导出它，否则 Drizzle 会尝试将其纳入迁移管理。
+在 Drizzle ORM 中，定义 `neon_auth` schema 和 `user` 表，但**不导出**，仅用于外键引用：
 
 ```typescript
-// 正确：导入但不导出
-import { usersSync } from 'drizzle-orm/neon';
+// 定义 neon_auth schema（不导出）
+import { pgSchema } from 'drizzle-orm/pg-core';
 
-// 仅在外键引用中使用
-export const userProfiles = pgTable('user_profiles', {
-  userId: text('user_id').references(() => usersSync.id),
-  // ...
+const neonAuthSchema = pgSchema('neon_auth');
+
+export const neonAuthUser = neonAuthSchema.table('user', {
+  id: text('id').primaryKey(),
+  email: text('email').notNull(),
+  emailVerified: boolean('email_verified'),
+  name: text('name'),
+  image: text('image'),
+  createdAt: timestamp('created_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }),
 });
 
-// 如需类型，单独导入
-import { usersSync as _usersSync } from 'drizzle-orm/neon';
-export type NeonAuthUser = typeof _usersSync.$inferSelect;
+// 导出用于类型提示（可选）
+export type NeonAuthUser = typeof neonAuthUser.$inferSelect;
 ```
 
-### 原则 3：用户 ID 字段类型为 text
+### 原则 2：业务表直接关联 neon_auth.user.id
 
-Neon Auth 的用户 ID 是 `text` 类型（不是 UUID），业务表中的外键字段也必须是 `text`。
+在业务表中使用 `references()` 直接指向 `neon_auth.user.id`：
 
 ```typescript
-// 正确
-userId: text('user_id').references(() => usersSync.id)
+export const userProfiles = pgTable('user_profiles', {
+  id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
+  // 直接关联 neon_auth.user.id
+  userId: text('user_id')
+    .notNull()
+    .unique()
+    .references(() => neonAuthUser.id, { onDelete: 'cascade' }),
+  // ...其他字段
+});
+```
 
-// 错误
-userId: uuid('user_id').references(() => usersSync.id)
+### 原则 3：用户 ID 字段类型必须为 text
+
+Neon Auth 的用户 ID 是 `text` 类型（UUID 格式的字符串），业务表的外键字段也必须是 `text`：
+
+```typescript
+// ✅ 正确
+userId: text('user_id').references(() => neonAuthUser.id)
+
+// ❌ 错误
+userId: uuid('user_id').references(() => neonAuthUser.id)
 ```
 
 ### 原则 4：先启用 Neon Auth，再推送 Schema
 
-必须先在 Neon Console 中启用 Neon Auth，确保 `neon_auth.users_sync` 表存在，然后再推送业务表 schema。
+必须先在 Neon Console 中启用 Neon Auth，确保 `neon_auth` schema 完整创建（包括 `user` 和 `account` 表），然后再推送业务表 schema。
 
 ---
 
@@ -209,18 +208,24 @@ export const db = drizzle(sql, { schema });
 所有需要关联用户的业务表，都使用相同的模式：
 
 ```typescript
-import { usersSync } from 'drizzle-orm/neon';
-import { pgTable, text, uuid, timestamp } from 'drizzle-orm/pg-core';
+import { pgSchema, pgTable, text, uuid, timestamp, boolean } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
+// 定义 neon_auth.user 引用（不导出）
+const neonAuthSchema = pgSchema('neon_auth');
+const neonAuthUser = neonAuthSchema.table('user', {
+  id: text('id').primaryKey(),
+  // ... 其他字段
+});
+
+// 业务表关联用户
 export const yourTable = pgTable('your_table', {
   id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
 
   // 关联 Neon Auth 用户
   userId: text('user_id')
     .notNull()
-    .references(() => usersSync.id),
-
+    .references(() => neonAuthUser.id, { onDelete: 'cascade' }),
 
   // 其他字段...
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -230,7 +235,7 @@ export const yourTable = pgTable('your_table', {
 > **为什么业务表使用 UUID 主键？**
 > - **安全性**：UUID 不可预测，防止资源 ID 被枚举（如 `/api/posts/1`, `/api/posts/2`）
 > - **分布式友好**：无需中心化 ID 生成器，适合微服务架构
-> - **Neon Auth 兼容**：`usersSync.id` 本身是 `text` 类型，可能是 UUID 格式
+> - **Neon Auth 兼容**：`neonAuthUser.id` 本身是 `text` 类型（UUID 格式的字符串）
 >
 > 注意：UUID 本身不是权限控制手段，仍需验证用户对资源的访问权限。
 
@@ -244,7 +249,7 @@ export const userProfiles = pgTable('user_profiles', {
   userId: text('user_id')
     .notNull()
     .unique()  // 一对一关系
-    .references(() => usersSync.id),
+    .references(() => neonAuthUser.id, { onDelete: 'cascade' }),
   role: userRoleEnum('role').default('member').notNull(),
   preferences: jsonb('preferences'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -259,7 +264,7 @@ export const conversations = pgTable('conversations', {
   id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
   userId: text('user_id')
     .notNull()
-    .references(() => usersSync.id),
+    .references(() => neonAuthUser.id, { onDelete: 'cascade' }),
   title: varchar('title', { length: 200 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => [
@@ -273,7 +278,7 @@ export const conversations = pgTable('conversations', {
 export const apiKeys = pgTable('api_keys', {
   id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
   // 用户级 API Key（可选）
-  userId: text('user_id').references(() => usersSync.id),
+  userId: text('user_id').references(() => neonAuthUser.id, { onDelete: 'cascade' }),
   // 分组级 API Key（可选）
   groupId: uuid('group_id').references(() => groups.id),
   // ...
@@ -288,7 +293,7 @@ export const groups = pgTable('groups', {
   name: varchar('name', { length: 100 }).notNull(),
   creatorId: text('creator_id')
     .notNull()
-    .references(() => usersSync.id),
+    .references(() => neonAuthUser.id, { onDelete: 'cascade' }),
   // ...
 });
 
@@ -296,7 +301,7 @@ export const operationLogs = pgTable('operation_logs', {
   id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
   operatorId: text('operator_id')
     .notNull()
-    .references(() => usersSync.id),
+    .references(() => neonAuthUser.id, { onDelete: 'cascade' }),
   // ...
 });
 ```
@@ -314,7 +319,7 @@ export const operationLogs = pgTable('operation_logs', {
 │                                                              │
 │  1. 在 Neon Console 启用 Neon Auth                           │
 │     ↓                                                        │
-│  2. 设计 schema.ts（使用 usersSync 外键）                     │
+│  2. 设计 schema.ts（在业务表中引用 neon_auth.user）           │
 │     ↓                                                        │
 │  3. bunx drizzle-kit generate（生成迁移 SQL）                 │
 │     ↓                                                        │
@@ -340,7 +345,7 @@ export const operationLogs = pgTable('operation_logs', {
 2. 点击 **Enable Neon Auth**
 3. 配置 OAuth 提供商（Google、GitHub 等）
 4. 在 **Configuration** 选项卡获取环境变量
-5. 等待 `neon_auth` schema 和 `users_sync` 表自动创建（约 30 秒）
+5. 等待 `neon_auth` schema 自动创建（包括 `user`、`account` 等表，约 30 秒）
 
 **方式二：使用 MCP 工具**
 
@@ -353,19 +358,31 @@ mcp__plugin_neon-plugin_neon__provision_neon_auth
 - 主分支应在启用 Neon Auth 后立即进行生产环境配置
 - 参考[生产环境配置最佳实践](#生产环境配置最佳实践)章节
 
-**环境变量配置**（Better Auth 只需一个）：
+**环境变量配置**：
 
 ```bash
-NEXT_PUBLIC_NEON_AUTH_URL=https://ep-xxx.neonauth.us-east-2.aws.neon.build/neondb/auth
+# 从 Neon Console → Auth → Configuration 复制
+# 根据框架不同，命名方式可能不同：
+# - Vite: VITE_NEON_AUTH_URL
+# - Next.js: NEXT_PUBLIC_NEON_AUTH_URL
+# - 服务端: NEON_AUTH_URL
+NEON_AUTH_URL=https://ep-xxx.neonauth.us-east-1.aws.neon.tech/neondb/auth
 ```
 
 ### 步骤 2：设计 Schema
 
-编辑 `src/db/schema.ts`：
+编辑 `src/db/schema.ts`，使用 `pgSchema` 定义 `neonAuthUser` 引用（参见["Schema 设计原则"](#schema-设计原则)部分）：
 
 ```typescript
-import { usersSync } from 'drizzle-orm/neon';
-// ... 定义你的业务表
+import { pgSchema } from 'drizzle-orm/pg-core';
+
+const neonAuthSchema = pgSchema('neon_auth');
+export const neonAuthUser = neonAuthSchema.table('user', {
+  id: text('id').primaryKey(),
+  // ... 其他字段
+});
+
+// 定义你的业务表，使用 neonAuthUser 作为外键引用
 ```
 
 ### 步骤 3：生成迁移
@@ -376,7 +393,7 @@ bunx drizzle-kit generate
 
 检查生成的迁移文件，确保：
 - 没有尝试创建 `neon_auth` 相关表
-- 外键正确指向 `neon_auth.users_sync`
+- 外键正确指向 `neon_auth.user`
 
 ### 步骤 4：推送迁移
 
@@ -419,15 +436,15 @@ WHERE tc.constraint_type = 'FOREIGN KEY'
 
 ## 验证与排错
 
-### 常见错误 1：relation "neon_auth.users_sync" does not exist
+### 常见错误 1：relation "neon_auth.user" does not exist
 
 **原因**：Neon Auth 未启用，或未完成初始化。
 
 **解决**：
 1. 进入 Neon Console → Auth
 2. 点击 **Enable Neon Auth**
-3. 等待初始化完成（约 30 秒），`users_sync` 表会自动创建
-4. 如使用开发分支，需执行 `reset_from_parent` 同步
+3. 等待初始化完成（约 30 秒），`neon_auth.user` 和 `neon_auth.account` 表会自动创建
+4. 如使用开发分支，确保分支在启用 Neon Auth 后创建，或执行 `reset_from_parent` 同步
 5. 重新执行 `drizzle-kit push`
 
 ### 常见错误 2：relation "neon_auth.account" does not exist
@@ -445,32 +462,34 @@ WHERE tc.constraint_type = 'FOREIGN KEY'
 
 **错误代码**：
 ```typescript
-userId: uuid('user_id').references(() => usersSync.id)
+userId: uuid('user_id').references(() => neonAuthUser.id)
 ```
 
 **正确代码**：
 ```typescript
-userId: text('user_id').references(() => usersSync.id)
+userId: text('user_id').references(() => neonAuthUser.id)
 ```
 
 ### 常见错误 4：Drizzle 尝试管理 neon_auth 表
 
-**原因**：导出了 usersSync 或手动定义了 neon_auth 表。
+**原因**：导出了 `neonAuthUser` 或在 schema.ts 中定义的 neon_auth 表被 Drizzle 纳入迁移。
 
 **解决**：
-1. 不要导出 `usersSync`
-2. 不要手动定义 `neon_auth` schema 的表
-3. 仅在 `.references()` 中使用 `usersSync`
+1. 不要导出 `neonAuthUser`（可选导出类型用于类型提示）
+2. 定义 `neonAuthUser` 后，**仅在 `.references()` 中使用它**
+3. 确保 Drizzle 生成的迁移文件中没有创建 `neon_auth.*` 表的 SQL
 
 ### 验证清单
 
 - [ ] Neon Auth 已启用（Console → Auth 显示 "Enabled"）
-- [ ] 环境变量 `NEXT_PUBLIC_NEON_AUTH_URL` 已配置
-- [ ] `neon_auth.users_sync` 表存在（自动创建）
-- [ ] `neon_auth.account` 表存在
+- [ ] 环境变量 `NEON_AUTH_URL`（或 `NEXT_PUBLIC_NEON_AUTH_URL`）已配置
+- [ ] `neon_auth` schema 包含完整的 9 个表：
+  - 核心表：`user`、`account`、`session`、`verification`
+  - Organization 插件：`organization`、`member`、`invitation`
+  - Neon 特有：`jwks`、`project_config`
 - [ ] 业务表使用 `text` 类型的 `user_id` 字段
-- [ ] 外键正确指向 `neon_auth.users_sync.id`
-- [ ] `usersSync` 仅导入不导出（避免 Drizzle 管理）
+- [ ] 外键正确指向 `neon_auth.user.id`
+- [ ] `neonAuthUser` 已定义但不导出为表（仅用于外键引用）
 
 ---
 
@@ -480,11 +499,12 @@ userId: text('user_id').references(() => usersSync.id)
 
 ```typescript
 /**
- * 数据库 Schema - 使用 Neon Auth
+ * 数据库 Schema - 使用 Neon Auth (Better Auth)
  */
 
 import { sql, relations } from 'drizzle-orm';
 import {
+  pgSchema,
   pgTable,
   pgEnum,
   uuid,
@@ -492,14 +512,30 @@ import {
   varchar,
   timestamp,
   boolean,
-  integer,
   jsonb,
   index,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
 
-// Neon Auth 官方 usersSync 助手 - 仅用于外键引用，不导出
-import { usersSync } from 'drizzle-orm/neon';
+// ============================================================================
+// Neon Auth 引用 - 定义但不导出
+// ============================================================================
+
+const neonAuthSchema = pgSchema('neon_auth');
+
+// 定义 neon_auth.user 表引用（用于外键关联）
+const neonAuthUser = neonAuthSchema.table('user', {
+  id: text('id').primaryKey(),
+  email: text('email').notNull(),
+  emailVerified: boolean('email_verified'),
+  name: text('name'),
+  image: text('image'),
+  createdAt: timestamp('created_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }),
+});
+
+// 导出类型用于类型提示（可选）
+export type NeonAuthUser = typeof neonAuthUser.$inferSelect;
 
 // ============================================================================
 // 枚举定义
@@ -520,7 +556,7 @@ export const userProfiles = pgTable('user_profiles', {
   userId: text('user_id')
     .notNull()
     .unique()
-    .references(() => usersSync.id),
+    .references(() => neonAuthUser.id, { onDelete: 'cascade' }),
   role: userRoleEnum('role').default('member').notNull(),
   preferences: jsonb('preferences'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -536,7 +572,7 @@ export const conversations = pgTable('conversations', {
   id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
   userId: text('user_id')
     .notNull()
-    .references(() => usersSync.id),
+    .references(() => neonAuthUser.id, { onDelete: 'cascade' }),
   title: varchar('title', { length: 200 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -575,14 +611,9 @@ export const messagesRelations = relations(messages, ({ one }) => ({
 }));
 
 // ============================================================================
-// 类型导出
+// 业务表类型导出
 // ============================================================================
 
-// Neon Auth 用户类型（需要时单独导入）
-import { usersSync as _usersSync } from 'drizzle-orm/neon';
-export type NeonAuthUser = typeof _usersSync.$inferSelect;
-
-// 业务表类型
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type NewUserProfile = typeof userProfiles.$inferInsert;
 
@@ -630,8 +661,9 @@ export type NewMessage = typeof messages.$inferInsert;
 
 ```bash
 # .env.production
-# Better Auth URL（生产环境）
-NEXT_PUBLIC_NEON_AUTH_URL=https://ep-xxx.neonauth.us-east-2.aws.neon.build/neondb/auth
+# Neon Auth URL（生产环境，从 Console → Auth → Configuration 复制）
+# Next.js 客户端使用 NEXT_PUBLIC_ 前缀
+NEXT_PUBLIC_NEON_AUTH_URL=https://ep-xxx.neonauth.us-east-1.aws.neon.tech/neondb/auth
 
 # 数据库连接（main 分支）
 DATABASE_URL="postgresql://用户:密码@主机/数据库?sslmode=require"
@@ -656,12 +688,12 @@ Neon Auth 生产环境检查清单：
 - [ ] Neon Auth 已在 main 分支启用
 - [ ] Scale to Zero 已禁用（main 分支）
 - [ ] 计算资源 ≥ 2 CU
-- [ ] NEXT_PUBLIC_NEON_AUTH_URL 已配置（生产环境）
+- [ ] NEON_AUTH_BASE_URL 已配置（生产环境）
 - [ ] OAuth 提供商已配置（Google/GitHub）
 - [ ] DATABASE_URL 指向 main 分支
 - [ ] SSL 模式已启用（sslmode=require）
-- [ ] users_sync 表存在并可查询
-- [ ] 业务表外键正确指向 neon_auth.users_sync
+- [ ] neon_auth.user 和 neon_auth.account 表存在并可查询
+- [ ] 业务表外键正确指向 neon_auth.user
 - [ ] 登录流程已在预生产环境测试
 ```
 
@@ -678,11 +710,11 @@ Neon Auth 生产环境检查清单：
 
 ## 参考链接
 
-- [Neon Auth 官方指南 (Next.js)](https://neon.com/guides/neon-auth-nextjs)
-- [Neon Auth + Drizzle 快速开始](https://neon.com/docs/neon-auth/quick-start/drizzle)
-- [Drizzle ORM Neon 集成](https://orm.drizzle.team/docs/connect-neon)
-- [Better Auth 文档](https://better-auth.com/docs)
-- [Drizzle ORM usersSync 定义](https://github.com/drizzle-team/drizzle-orm/blob/main/changelogs/drizzle-orm/0.39.0.md)
+- [Neon Auth 概览](https://neon.com/docs/auth/overview)
+- [Neon Auth 认证流程](https://neon.com/docs/auth/authentication-flow)
+- [Better Auth 官方文档](https://www.better-auth.com/)
+- [Drizzle ORM 官方文档](https://orm.drizzle.team/)
+- [Neon Database 官方文档](https://neon.tech/docs)
 
 ---
 
@@ -691,6 +723,6 @@ Neon Auth 生产环境检查清单：
 | 日期 | 更新内容 |
 |------|----------|
 | 2025-12-19 | 初稿 |
-| 2025-12-19 | 更新为 Better Auth 版本，补充 users_sync 表结构和 rawJson 字段 |
 | 2025-12-19 | 添加生产环境配置最佳实践、关键顺序要求 |
 | 2025-12-24 | drizzle.config.ts 添加 dotenv 加载，补充 UUID 主键策略说明 |
+| 2025-12-26 | **重大更新**：修正所有过时的 usersSync 引用为 neonAuthUser |

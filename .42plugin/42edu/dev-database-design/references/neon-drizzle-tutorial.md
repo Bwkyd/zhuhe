@@ -2,15 +2,28 @@
 
 ## 配置流程概览
 
+**不使用 Neon Auth 时：**
 ```
 0. 安装 Neon Plugin → 获取 MCP 工具能力
 1. 创建 Neon 项目 → 获取数据库连接
-2. (可选) 配置 Neon Auth (Better Auth) → 必须在主分支先配置！
-3. 创建开发分支 → 隔离开发环境（会继承 Neon Auth 和 users_sync 表）
-4. 安装依赖 → drizzle-orm + @neondatabase/serverless
+2. 创建开发分支 → 隔离开发环境
+3. 安装依赖 → drizzle-orm + @neondatabase/serverless
+4. 配置连接 → .env + drizzle.config.ts + src/db/index.ts
+5. 定义/检查 Schema → src/db/schema.ts
+6. 推送 Schema → bun run db:push
+```
+
+**使用 Neon Auth (Better Auth) 时：**
+```
+0. 安装 Neon Plugin → 获取 MCP 工具能力
+1. 创建 Neon 项目 → 获取数据库连接
+2. 在主分支启用 Neon Auth → 自动创建 neon_auth schema
+3. 创建开发分支 → 隔离开发环境（会继承 neon_auth schema）
+4. 安装依赖 → drizzle-orm + @neondatabase/serverless + @neondatabase/neon-js
 5. 配置连接 → .env + drizzle.config.ts + src/db/index.ts
-6. 定义/检查 Schema → src/db/schema.ts（使用 usersSync 助手建立外键）
-7. 推送 Schema → bun run db:push
+6. 设置 API Route Handler → app/api/auth/[...path]/route.ts（Next.js App Router）
+7. 定义/检查 Schema → src/db/schema.ts（在业务表中引用 neon_auth.user）
+8. 推送 Schema → bun run db:push（仅推送 public schema，neon_auth 由系统管理）
 ```
 
 ---
@@ -388,43 +401,243 @@ bun run db:studio
 
 ## Neon Auth 配置 (Better Auth)
 
-Neon Auth 基于 Better Auth 框架，将用户认证直接集成到 Neon Postgres 数据库中。
-启用后会自动创建并维护 `neon_auth.users_sync` 表，无需手动同步。
+Neon Auth 是 Neon 提供的托管认证服务，基于 [Better Auth](https://www.better-auth.com/) 框架。所有认证数据（用户、会话、OAuth 配置）直接存储在 Neon 数据库的 `neon_auth` schema 中，由系统自动管理。
 
-### 启用 Neon Auth
+### 步骤 1：安装 Neon Auth SDK
 
-**方式一：通过 Neon Console**
+```bash
+npm install @neondatabase/neon-js
+```
 
-1. 进入项目 → 左侧栏 **Auth**
+或使用 bun：
+
+```bash
+bun add @neondatabase/neon-js
+```
+
+### 步骤 2：在 Neon Console 启用 Neon Auth
+
+⚠️ **关键顺序**：必须先在**主分支（main）**启用 Neon Auth，然后再创建开发分支（或重置已有分支）。
+
+**操作步骤：**
+1. 进入 Neon Console → 选择项目 → 左侧栏 **Auth**
 2. 点击 **Enable Neon Auth**
-3. 配置 OAuth 提供商（Google、GitHub 等）
-4. 在 **Configuration** 选项卡获取环境变量
+3. 配置 OAuth 提供商（Google、GitHub 等，可选）
+4. 点击 **Configuration** 选项卡，复制 **Auth Base URL**
 
-**方式二：通过 MCP 工具**
+**或使用 MCP 工具：**
 
 ```
 mcp__plugin_neon-plugin_neon__provision_neon_auth
 参数：{ "projectId": "你的项目ID" }
 ```
 
-⚠️ **关键顺序**：
-1. 必须先在**主分支**配置 Neon Auth
-2. 然后再创建开发分支（或重置已有分支）
-3. 开发分支会自动继承 `neon_auth` schema 和 `users_sync` 表
+### 步骤 3：配置环境变量
 
-### 环境变量配置
+在 `.env` 或 `.env.local` 中添加：
 
 ```bash
-# Better Auth 只需一个环境变量
-NEXT_PUBLIC_NEON_AUTH_URL=https://ep-xxx.neonauth.us-east-2.aws.neon.build/neondb/auth
+# Neon Auth URL（从 Console → Auth → Configuration 复制）
+# 根据框架不同，命名方式可能不同：
+# - Vite: VITE_NEON_AUTH_URL
+# - Next.js 客户端: NEXT_PUBLIC_NEON_AUTH_URL
+# - 服务端: NEON_AUTH_URL
+NEXT_PUBLIC_NEON_AUTH_URL=https://ep-xxx.neonauth.us-east-1.aws.neon.tech/neondb/auth
 
 # 数据库连接
 DATABASE_URL="postgresql://用户:密码@主机/数据库?sslmode=require&channel_binding=require"
 ```
 
+### 步骤 4：设置 API Route Handler（Next.js App Router 必须）
+
+Neon Auth 通过 REST API 与你的应用通信，需要在 Next.js 中创建 API route handler。
+
+**创建 `app/api/auth/[...path]/route.ts`：**
+
+```typescript
+import { authApiHandler } from "@neondatabase/neon-js/auth/next";
+
+export const { GET, POST } = authApiHandler();
+```
+
+这个 handler 会自动处理所有认证相关的 API 请求（登录、登出、注册等）。
+
+### 步骤 4.5：创建 Auth Client（客户端 SDK）
+
+**⚠️ 重要**：这是官方推荐的客户端 SDK 初始化方式。
+
+**创建 `src/auth.ts`（或 `lib/auth.ts`）：**
+
+```typescript
+import { createAuthClient } from "@neondatabase/neon-js/auth";
+
+// 使用环境变量初始化 Auth Client
+export const authClient = createAuthClient(
+  process.env.NEXT_PUBLIC_NEON_AUTH_URL!
+);
+```
+
+**在客户端组件中使用：**
+
+```typescript
+"use client";
+
+import { authClient } from "@/auth";
+
+// 登录
+const handleSignIn = async (email: string, password: string) => {
+  const { data, error } = await authClient.signIn.email({
+    email,
+    password,
+  });
+  if (error) {
+    console.error("Sign in failed:", error);
+    return;
+  }
+  console.log("Signed in:", data.user);
+};
+
+// 注册
+const handleSignUp = async (email: string, password: string, name: string) => {
+  const { data, error } = await authClient.signUp.email({
+    email,
+    password,
+    name,
+  });
+  if (error) {
+    console.error("Sign up failed:", error);
+    return;
+  }
+  console.log("Signed up:", data.user);
+};
+
+// OAuth 登录（如 Google）
+const handleGoogleSignIn = async () => {
+  await authClient.signIn.social({
+    provider: "google",
+    callbackURL: "/dashboard",
+  });
+};
+```
+
+### 步骤 5（可选）：设置中间件保护路由
+
+如果需要在路由级别保护某些页面，可以使用 middleware：
+
+**创建 `middleware.ts`：**
+
+```typescript
+import { neonAuthMiddleware } from "@neondatabase/neon-js/auth/next";
+
+export default neonAuthMiddleware({
+  loginUrl: "/auth/sign-in",
+});
+
+export const config = {
+  matcher: ["/account/:path*", "/dashboard/:path*"],
+};
+```
+
+这会自动重定向未认证用户到登录页。
+
+### 步骤 6（可选）：使用官方 UI 组件快速构建
+
+官方提供了可视化 UI 组件，可以快速构建登录页和账户管理页。
+
+**在 `app/layout.tsx` 中包装应用：**
+
+```typescript
+import { NeonAuthUIProvider } from "@neondatabase/neon-js/auth/react/ui";
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html>
+      <body>
+        <NeonAuthUIProvider>
+          {children}
+        </NeonAuthUIProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+**创建登录页 `app/auth/sign-in/page.tsx`：**
+
+```typescript
+import { AuthView } from "@neondatabase/neon-js/auth/react/ui";
+
+export default function SignInPage() {
+  return <AuthView pathname="sign-in" />;
+}
+```
+
+**创建账户管理页 `app/account/page.tsx`：**
+
+```typescript
+import { AccountView } from "@neondatabase/neon-js/auth/react/ui";
+
+export default function AccountPage() {
+  return <AccountView />;
+}
+```
+
+### 步骤 7：Drizzle 中关联 neon_auth.user
+
+⚠️ **重要**：`neon_auth` schema 是系统托管的，**不要用 drizzle-kit 去迁移**。你只需在业务表中声明对 `neon_auth.user` 的引用即可。
+
+**声明 neon_auth.user 引用（新建 `db/neon-auth.schema.ts`）：**
+
+```typescript
+import { pgSchema, text, timestamp, boolean } from "drizzle-orm/pg-core";
+
+// 声明 neon_auth schema
+const neonAuth = pgSchema("neon_auth");
+
+// 声明 neon_auth.user 表（仅用于外键引用，不导出为迁移表）
+// 只声明需要用到的列，完整列表见官方文档
+export const neonAuthUser = neonAuth.table("user", {
+  id: text("id").primaryKey(),           // UUID 格式的字符串
+  email: text("email"),
+  emailVerified: boolean("email_verified"),
+  name: text("name"),
+  image: text("image"),
+  createdAt: timestamp("created_at"),
+  updatedAt: timestamp("updated_at"),
+});
+```
+
+**在业务表中引用用户：**
+
+```typescript
+// db/schema.ts
+import { pgTable, uuid, text, timestamp } from "drizzle-orm/pg-core";
+import { neonAuthUser } from "./neon-auth.schema";
+
+export const profiles = pgTable("profiles", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => neonAuthUser.id, { onDelete: "cascade" }),
+  displayName: text("display_name"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+```
+
+**推送 Schema：**
+
+```bash
+bun run db:push
+```
+
+Drizzle 会自动检测 `neon_auth` schema 不需要迁移，只推送 `public` schema 中的表。
+
 ### 分支未继承 neon_auth 的处理
 
-如果开发分支创建于 Neon Auth 配置之前，需要重置：
+如果开发分支创建于 Neon Auth 配置之前，需要重置以继承 `neon_auth` schema：
 
 ```
 mcp__plugin_neon-plugin_neon__reset_from_parent
@@ -435,42 +648,25 @@ mcp__plugin_neon-plugin_neon__reset_from_parent
 }
 ```
 
-### usersSync 表说明
-
-启用 Neon Auth 后，`neon_auth.users_sync` 表会**自动创建和维护**，包含以下字段：
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `id` | text | 用户唯一标识（主键） |
-| `name` | text | 用户名 |
-| `email` | text | 邮箱 |
-| `raw_json` | jsonb | 原始用户数据 |
-| `created_at` | timestamptz | 创建时间 |
-| `deleted_at` | timestamptz | 删除时间（软删除） |
-
-在 Drizzle Schema 中，只需使用 `usersSync` 助手建立外键：
-
-```typescript
-import { usersSync } from 'drizzle-orm/neon';
-
-export const userProfiles = pgTable('user_profiles', {
-  userId: text('user_id')
-    .notNull()
-    .references(() => usersSync.id),
-  // ...其他字段
-});
-```
-
 ### 常见错误处理
 
-**错误：`relation "neon_auth.users_sync" does not exist`**
+**错误：`relation "neon_auth.user" does not exist`**
 
 **原因**：Neon Auth 未启用或未完成初始化
 
-**解决**：
-1. 确认已在 Neon Console 启用 Neon Auth
-2. 等待初始化完成（约 30 秒）
-3. 如使用开发分支，确保分支在启用 Neon Auth 后创建，或执行 `reset_from_parent`
+**解决方案：**
+1. 进入 Neon Console → Auth，检查状态是否为 "Enabled"
+2. 如果显示 "Provisioning"，等待完成（约 30 秒）
+3. 如使用开发分支且创建于 Neon Auth 配置之前，执行 `reset_from_parent` 重置分支
+
+**错误：Drizzle 尝试迁移 neon_auth schema**
+
+**原因**：不小心在 schema.ts 中导出了 neonAuthUser
+
+**解决方案：**
+1. 在 `db/neon-auth.schema.ts` 中定义 neonAuthUser，但不导出该表本身
+2. 仅导出类型（`export type NeonAuthUser = ...`）用于类型提示
+3. 确保 Drizzle 生成的迁移文件中没有 `CREATE TABLE neon_auth.*` 的 SQL
 
 ---
 
@@ -494,28 +690,61 @@ export const userProfiles = pgTable('user_profiles', {
 
 **解决**：检查错误信息，必要时手动删除冲突表
 
-### Q: `relation "neon_auth.users_sync" does not exist`
-
-**原因**：Neon Auth 未启用或未完成初始化
-
-**解决**：
-1. 在 Neon Console 启用 Neon Auth
-2. 等待初始化完成（约 30 秒）
-3. 如使用开发分支，执行 `reset_from_parent` 重置
-
 ### Q: 如何在代码中获取当前用户？
 
-**Better Auth 方式**：
+**Next.js App Router 服务端获取用户（推荐）：**
 
 ```typescript
-// 客户端
-import { authClient } from '@/auth';
-const session = await authClient.getSession();
-const user = session?.user;
+// app/account/page.tsx (Server Component)
+import { neonAuth } from "@neondatabase/neon-js/auth/next";
+import { db } from "@/db";
+import { profiles } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
-// 服务端 (Next.js)
-import { authClient } from '@/auth';
-const session = await authClient.getSession();
+export default async function AccountPage() {
+  // 在服务端获取当前用户
+  const { user } = await neonAuth();
+
+  if (!user) {
+    return <div>Not signed in</div>;
+  }
+
+  // 从业务表查询扩展信息
+  const profile = await db.query.profiles.findFirst({
+    where: eq(profiles.userId, user.id),
+  });
+
+  return (
+    <div>
+      <h1>Welcome {user.name}</h1>
+      <p>Email: {user.email}</p>
+      <pre>{JSON.stringify({ user, profile }, null, 2)}</pre>
+    </div>
+  );
+}
+```
+
+**客户端获取会话（React 组件）：**
+
+```typescript
+"use client"; // 客户端组件
+
+import { useSession } from "@neondatabase/neon-js/auth/react";
+
+export function UserProfile() {
+  const session = useSession();
+
+  if (!session) {
+    return <div>Not signed in</div>;
+  }
+
+  return (
+    <div>
+      <p>User ID: {session.user.id}</p>
+      <p>Email: {session.user.email}</p>
+    </div>
+  );
+}
 ```
 
 ---
@@ -726,3 +955,4 @@ your-project/
 | 2025-12-19 | 初稿 |
 | 2025-12-19 | 添加分支命名规范、生产环境配置最佳实践 |
 | 2025-12-24 | 连接字符串添加 `channel_binding`，添加 `ws` 依赖，更新主键语法为 `generatedAlwaysAsIdentity()`，补充 WebSocket 适配器配置、事务处理、批量操作最佳实践 |
+| 2025-12-26 | **重大更新**：按官方文档完全重新组织 Neon Auth 部分 |

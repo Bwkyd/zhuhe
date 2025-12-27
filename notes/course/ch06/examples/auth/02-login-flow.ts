@@ -529,78 +529,117 @@ function realWorldExample() {
   console.log(`
 在真实的 Next.js + Neon Auth 应用中：
 
-1. 邮箱密码登录（app/api/auth/login/route.ts）：
-
-   import { auth } from '@/lib/auth';
-
-   export async function POST(request: Request) {
-     const { email, password } = await request.json();
-
-     const session = await auth.api.signInWithCredentials({
-       email,
-       password,
-     });
-
-     if (!session) {
-       return Response.json({ error: 'Invalid credentials' }, { status: 401 });
-     }
-
-     // Session 自动设置到 Cookie
-     return Response.json({ user: session.user });
-   }
-
-2. OAuth 登录（app/api/auth/oauth/route.ts）：
-
-   import { auth } from '@/lib/auth';
-
-   export async function GET(request: Request) {
-     const { searchParams } = new URL(request.url);
-     const provider = searchParams.get('provider'); // 'google' | 'github'
-
-     // 重定向到 OAuth 提供商
-     return auth.api.signInWithOAuth({
-       provider,
-       callbackUrl: '/api/auth/callback',
-     });
-   }
-
-3. 登出（app/api/auth/logout/route.ts）：
-
-   import { auth } from '@/lib/auth';
-
-   export async function POST(request: Request) {
-     await auth.api.signOut({
-       headers: request.headers,
-     });
-
-     return Response.json({ success: true });
-   }
-
-4. 客户端登录表单（app/login/page.tsx）：
+1. 创建 Auth Client（lib/auth/client.ts）：
 
    'use client';
 
-   import { signIn } from '@/lib/auth-client';
+   import { createAuthClient } from '@neondatabase/neon-js/auth/next';
+
+   export const authClient = createAuthClient();
+
+2. 邮箱密码登录（客户端组件中）：
+
+   'use client';
+
+   import { authClient } from '@/lib/auth/client';
 
    export default function LoginPage() {
-     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-       e.preventDefault();
-       const formData = new FormData(e.currentTarget);
+     const [email, setEmail] = useState('');
+     const [password, setPassword] = useState('');
 
-       await signIn.credentials({
-         email: formData.get('email') as string,
-         password: formData.get('password') as string,
-         callbackUrl: '/dashboard',
+     async function handleSubmit(e: React.FormEvent) {
+       e.preventDefault();
+
+       const result = await authClient.signIn.email({
+         email,
+         password,
        });
+
+       if (result.error) {
+         alert(result.error.message);
+         return;
+       }
+
+       // 登录成功，重定向到仪表板
+       window.location.href = '/dashboard';
      }
 
      return (
        <form onSubmit={handleSubmit}>
-         <input type="email" name="email" required />
-         <input type="password" name="password" required />
+         <input
+           type="email"
+           value={email}
+           onChange={(e) => setEmail(e.target.value)}
+           required
+         />
+         <input
+           type="password"
+           value={password}
+           onChange={(e) => setPassword(e.target.value)}
+           required
+         />
          <button type="submit">登录</button>
        </form>
      );
+   }
+
+3. 用户注册：
+
+   const result = await authClient.signUp.email({
+     name: 'John Doe',
+     email: 'john@example.com',
+     password: 'securepassword',
+   });
+
+   if (result.error) {
+     console.error('注册失败:', result.error.message);
+   } else {
+     console.log('注册成功:', result.data.user);
+   }
+
+4. OAuth 登录（Google、GitHub 等）：
+
+   // 点击按钮触发 OAuth 登录
+   async function handleGoogleLogin() {
+     await authClient.signIn.social({
+       provider: 'google',
+       callbackURL: '/dashboard',
+     });
+   }
+
+   async function handleGitHubLogin() {
+     await authClient.signIn.social({
+       provider: 'github',
+       callbackURL: '/dashboard',
+     });
+   }
+
+5. 登出：
+
+   async function handleSignOut() {
+     const { error } = await authClient.signOut();
+
+     if (error) {
+       console.error('登出失败:', error.message);
+     } else {
+       // 登出成功，重定向到首页
+       window.location.href = '/';
+     }
+   }
+
+6. 服务端验证（API Route 或 Server Component）：
+
+   import { neonAuth } from '@neondatabase/neon-js/auth/next';
+
+   export async function GET(request: Request) {
+     const { session, user } = await neonAuth();
+
+     if (!session || !user) {
+       return Response.json({ error: 'Unauthorized' }, { status: 401 });
+     }
+
+     // 请求
+     return Response.json({ user });
    }
   `);
 }

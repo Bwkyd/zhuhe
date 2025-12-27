@@ -25,3 +25,10 @@
   - notes/claude-code-conversation-guide.md 
 
 更新：notes/20251206-1.md
+
+## 20251226
+
+修改：
+- 修正 neon-auth schema 及相关内容
+  - .42plugin/42edu/dev-database-design/references
+  - notes/course/ch06/examples/auth

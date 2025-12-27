@@ -87,58 +87,93 @@ Neon Auth 是 Neon 提供的托管认证服务，基于 Better Auth 框架：
 ### 架构图
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     Neon Database                           │
-├─────────────────────────┬───────────────────────────────────┤
-│     neon_auth schema    │         public schema             │
-│   (系统管理，不可修改)     │      (业务表，你来设计)             │
-├─────────────────────────┼───────────────────────────────────┤
-│ • user                  │ • user_profiles (扩展信息)         │
-│   - id (text)           │   - userId (外键)                 │
-│   - email               │   - role (角色)                   │
-│   - password_hash       │   - preferences (偏好)            │
-│                         │                                   │
-│ • account (OAuth)       │ • conversations (对话)            │
-│ • session (会话)         │ • messages (消息)                 │
-│ • verification          │ • api_keys (API密钥)              │
-│ • organization          │ • groups (分组)                   │
-│ • member                │                                   │
-│                         │                                   │
-│ • users_sync ◄──────────┼─── 外键引用点                      │
-│   - id (text)           │                                   │
-│   - name                │                                   │
-│   - email               │                                   │
-│   - rawJson             │                                   │
-└─────────────────────────┴───────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                     Neon Database                            │
+├──────────────────────────┬───────────────────────────────────┤
+│   neon_auth schema       │         public schema             │
+│  (Neon Auth管理，不可修改) │      (业务表，你来设计)            │
+├──────────────────────────┼───────────────────────────────────┤
+│ • user ◄─────────────────┼─── 外键引用点                      │
+│   - id (text)            │                                   │
+│   - email                │ • user_profiles (扩展信息)         │
+│   - emailVerified        │   - userId (外键)                 │
+│   - name                 │   - role (角色)                   │
+│   - image                │   - preferences (偏好)            │
+│   - createdAt/updatedAt  │                                   │
+│                          │ • conversations (对话)            │
+│ • account                │ • messages (消息)                 │
+│   (密码 + OAuth tokens)   │ • api_keys (API密钥)              │
+│ • session (会话)          │ • groups (分组)                   │
+│ • verification           │                                   │
+│   (邮箱验证、密码重置)     │                                   │
+└──────────────────────────┴───────────────────────────────────┘
 ```
 
-### usersSync 助手
+### neon_auth 表详细说明
 
-Drizzle ORM 提供了 `usersSync` 助手，用于引用 `neon_auth.users_sync` 表：
+**核心表（4 个）**：Better Auth 框架自动创建
+
+| 表名 | 用途 |
+|------|------|
+| `user` | 用户基本信息（**业务表外键关联此表**） |
+| `account` | 认证凭证（密码哈希、OAuth tokens） |
+| `session` | 用户会话管理 |
+| `verification` | 邮箱验证、密码重置令牌 |
+
+**Organization 插件表（3 个）**：Neon Auth 默认启用的多租户支持
+
+| 表名 | 用途 |
+|------|------|
+| `organization` | 组织/团队信息 |
+| `member` | 组织成员关系（用户-组织多对多） |
+| `invitation` | 组织邀请（待接受的邀请） |
+
+**Neon 特有表（2 个）**：Neon 平台扩展
+
+| 表名 | 用途 |
+|------|------|
+| `jwks` | JSON Web Key Set 公钥（用于 RLS 验证 JWT） |
+| `project_config` | Neon Auth 项目配置 |
+
+### 关联 Neon Auth 用户表
+
+在业务表中关联用户，直接引用 Neon Auth 的 `user` 表：
 
 ```typescript
-import { usersSync } from 'drizzle-orm/neon';
+import { pgTable, text, uuid, timestamp, jsonb } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 export const userProfiles = pgTable('user_profiles', {
   id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
-  // 外键引用 neon_auth.users_sync
+  // 外键引用 neon_auth.user 表
   userId: text('user_id')
     .notNull()
     .unique()
-    .references(() => usersSync.id),
+    .references(() => neonAuthUser.id, { onDelete: 'cascade' }),
   role: userRoleEnum('role').default('member').notNull(),
-  // ...
+  preferences: jsonb('preferences').default({}).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 ```
 
-**为什么用 users_sync 而不是 user？**
+**Neon Auth 用户表结构** (`neon_auth.user`)
 
-| 对比 | neon_auth.user | neon_auth.users_sync |
-|------|----------------|---------------------|
-| 数据敏感度 | 高（含密码哈希） | 低（仅基本信息） |
-| 设计目的 | 认证系统内部 | 业务表外键关联 |
-| 字段 | id, email, password, ... | id, name, email, rawJson |
-| 推荐用途 | 认证逻辑 | 业务外键 |
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | text | 用户唯一标识（主键） |
+| `email` | text | 邮箱地址 |
+| `emailVerified` | boolean | 邮箱是否已验证 |
+| `name` | text | 用户名 |
+| `image` | text | 头像 URL |
+| `createdAt` | timestamp | 创建时间 |
+| `updatedAt` | timestamp | 更新时间 |
+
+**关键要点：**
+- Neon Auth 现在基于 Better Auth 构建，数据存储在 `neon_auth` schema
+- 密码和 OAuth 信息存储在 `neon_auth.account` 表，与 `user` 表分离
+- 业务表应该**直接关联 `neon_auth.user.id`**，不需要额外的同步表（`users_sync` 已过时）
+- 设置 `onDelete: 'cascade'` 确保用户删除时相关数据自动清理
+- 可以使用 SQL 直接查询 `neon_auth` schema 中的数据用于调试、分析或自定义逻辑
 
 ---
 
@@ -304,26 +339,67 @@ export const resourceTypeEnum = pgEnum('resource_type', [
 
 ### 前置条件
 
-1. 安装依赖：
+1. **启用 Neon Auth：**
+   - 进入 [Neon Console](https://console.neon.tech/)
+   - 选择项目 → 左侧栏 **Auth**
+   - 点击 **Enable Neon Auth** 并配置 OAuth 提供商（Google、GitHub 等）
+   - 在 **Configuration** 选项卡复制 Auth URL
+
+2. **安装 Neon SDK：**
+
+```bash
+bun add @neondatabase/neon-js
+```
+
+3. **配置环境变量：**
+
+```bash
+# .env
+DATABASE_URL=postgresql://...
+NEON_AUTH_BASE_URL=https://ep-xxx.neonauth.us-east-1.aws.neon.tech/neondb/auth
+```
+
+**注意：** 将 `NEON_AUTH_BASE_URL` 替换为从 Neon Console 复制的实际 Auth URL
+
+4. **创建 API Route Handler（必需）：**
+
+创建 `app/api/auth/[...path]/route.ts`：
+
+```typescript
+import { authApiHandler } from '@neondatabase/neon-js/auth/next';
+
+export const { GET, POST } = authApiHandler();
+```
+
+**说明：** 这个 handler 是 Neon Auth 工作的前提条件。所有认证 API 请求都会通过它路由。路径必须是 `/api/auth/[...path]`（动态路由段）。
+
+5. **创建 Auth Client：**
+
+创建 `lib/auth/client.ts`：
+
+```typescript
+'use client';
+
+import { createAuthClient } from '@neondatabase/neon-js/auth/next';
+
+export const authClient = createAuthClient();
+```
+
+**说明：** 这个 client 用于客户端组件中的认证操作。
+
+6. **安装其他依赖：**
 
 ```bash
 bun install
 ```
 
-2. 配置环境变量：
-
-```bash
-# .env
-DATABASE_URL=postgresql://...
-```
-
-3. 推送数据库 Schema：
+7. **推送数据库 Schema：**
 
 ```bash
 bunx drizzle-kit push
 ```
 
-4. 运行种子数据（可选）：
+8. **运行种子数据（可选）：**
 
 ```bash
 bunx tsx src/db/seed.ts
@@ -360,37 +436,42 @@ bunx tsx src/examples/auth/06-policy-check.ts
 ### 场景 1：用户查看自己的对话列表
 
 ```typescript
+import { neonAuth } from '@neondatabase/neon-js/auth/next';
+import { redirect } from 'next/navigation';
+
 // 1. 认证：验证用户身份
-const session = await getSession();
-if (!session) {
-  return redirect('/login');
+const { session, user } = await neonAuth();
+if (!session || !user) {
+  redirect('/auth/sign-in');
 }
 
 // 2. 授权：检查权限（member 可以读取自己的对话）
-const canRead = checkPermission(session.user.role, 'conversation', 'read');
+const canRead = checkPermission(user.role, 'conversation', 'read');
 if (!canRead) {
   return { error: 'No permission' };
 }
 
 // 3. 业务逻辑：查询对话列表
 const conversations = await db.query.conversations.findMany({
-  where: eq(conversations.userId, session.user.id),
+  where: eq(conversations.userId, user.id),
 });
 ```
 
 ### 场景 2：分组管理员管理分组成员
 
 ```typescript
+import { neonAuth } from '@neondatabase/neon-js/auth/next';
+
 // 1. 认证：验证用户身份
-const session = await getSession();
-if (!session) {
+const { session, user } = await neonAuth();
+if (!session || !user) {
   return { error: 'Not authenticated' };
 }
 
 // 2. 授权：检查是否是分组管理员
 const userGroup = await db.query.userGroups.findFirst({
   where: and(
-    eq(userGroups.userId, session.user.id),
+    eq(userGroups.userId, user.id),
     eq(userGroups.groupId, groupId),
   ),
 });
@@ -410,15 +491,17 @@ await db.insert(userGroups).values({
 ### 场景 3：系统管理员查看所有操作日志
 
 ```typescript
+import { neonAuth } from '@neondatabase/neon-js/auth/next';
+
 // 1. 认证：验证用户身份
-const session = await getSession();
-if (!session) {
+const { session, user } = await neonAuth();
+if (!session || !user) {
   return { error: 'Not authenticated' };
 }
 
 // 2. 授权：检查是否是系统管理员
 const userProfile = await db.query.userProfiles.findFirst({
-  where: eq(userProfiles.userId, session.user.id),
+  where: eq(userProfiles.userId, user.id),
 });
 
 if (userProfile?.role !== 'system_admin') {
@@ -446,18 +529,26 @@ const conversations = await db.query.conversations.findMany({
 });
 
 // ✅ 正确：从 Session 获取 userId
-const session = await getSession();
+import { neonAuth } from '@neondatabase/neon-js/auth/next';
+
+const { session, user } = await neonAuth();
+if (!session || !user) {
+  throw new Error('Not authenticated');
+}
+
 const conversations = await db.query.conversations.findMany({
-  where: eq(conversations.userId, session.user.id),
+  where: eq(conversations.userId, user.id),
 });
 ```
 
 ### 2. 先认证，后授权
 
 ```typescript
+import { neonAuth } from '@neondatabase/neon-js/auth/next';
+
 // ✅ 正确的顺序
-const session = await getSession(); // 1. 认证
-if (!session) return { error: 'Not authenticated' };
+const { session, user } = await neonAuth(); // 1. 认证
+if (!session || !user) return { error: 'Not authenticated' };
 
 const hasPermission = checkPermission(...); // 2. 授权
 if (!hasPermission) return { error: 'Forbidden' };
@@ -495,8 +586,9 @@ await db.insert(operationLogs).values({
 
 ## 参考资料
 
-- [Neon Auth 官方文档](https://neon.tech/docs/guides/neon-auth-nextjs)
-- [Better Auth 文档](https://better-auth.com/docs)
+- [Neon Auth 概览](https://neon.com/docs/auth/overview)
+- [Neon Auth 认证流程](https://neon.com/docs/auth/authentication-flow)
+- [Better Auth 文档](https://www.better-auth.com/)
 - [RBAC 维基百科](https://en.wikipedia.org/wiki/Role-based_access_control)
 - [OWASP 访问控制指南](https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html)
 
@@ -508,9 +600,21 @@ await db.insert(operationLogs).values({
 
 **A:** 可以，而且应该分开。认证负责验证身份，授权负责验证权限。两者职责不同，应该解耦。
 
-### Q2: 为什么需要 users_sync 表？
+### Q2: 业务表如何关联用户信息？
 
-**A:** `neon_auth.user` 表包含敏感信息（密码哈希等），`users_sync` 是一个同步表，只包含基本信息（id、name、email），专门用于业务表的外键关联。
+**A:** Neon Auth（基于 Better Auth）将用户数据和认证凭证分离：
+- **neon_auth.user 表**：存储基本用户信息（id、name、email、image 等）
+- **neon_auth.account 表**：存储认证凭证（密码、OAuth tokens 等）
+
+业务表应该**直接关联 `neon_auth.user.id`**，不需要额外的同步表（`users_sync` 已过时）：
+
+```typescript
+userId: text('user_id')
+  .notNull()
+  .references(() => neonAuthUser.id, { onDelete: 'cascade' })
+```
+
+所有数据都存储在 `neon_auth` schema 中，可以使用 SQL 直接查询。
 
 ### Q3: 角色和权限的区别是什么？
 

@@ -399,18 +399,18 @@ function realWorldExample() {
 
    'use server';
 
-   import { auth } from '@/lib/auth';
+   import { neonAuth } from '@neondatabase/neon-js/auth/next';
    import { checkPermission } from '@/lib/auth/permissions';
 
    export async function deleteConversation(conversationId: string) {
-     const session = await auth();
-     if (!session) {
+     const { session, user } = await neonAuth();
+     if (!session || !user) {
        throw new Error('Unauthorized');
      }
 
      // 检查是否有删除权限
      const canDelete = await checkPermission(
-       session.user.id,
+       user.id,
        'conversation',
        'delete'
      );
@@ -420,13 +420,13 @@ function realWorldExample() {
      }
 
      // 检查资源所有权（除非是系统管理员）
-     const role = await getUserRole(session.user.id);
+     const role = await getUserRole(user.id);
      if (role !== 'system_admin') {
        const conversation = await db.query.conversations.findFirst({
          where: eq(conversations.id, conversationId),
        });
 
-       if (conversation?.userId !== session.user.id) {
+       if (conversation?.userId !== user.id) {
          throw new Error('Forbidden: Not the owner');
        }
      }
@@ -437,17 +437,18 @@ function realWorldExample() {
 
 3. 在 API 路由中使用：
 
+   import { neonAuth } from '@neondatabase/neon-js/auth/next';
    import { checkPermission } from '@/lib/auth/permissions';
 
    export async function POST(request: Request) {
-     const session = await auth.api.getSession({ headers: request.headers });
-     if (!session) {
+     const { session, user } = await neonAuth();
+     if (!session || !user) {
        return Response.json({ error: 'Unauthorized' }, { status: 401 });
      }
 
      // 检查是否有写入权限
      const canWrite = await checkPermission(
-       session.user.id,
+       user.id,
        'conversation',
        'write'
      );
@@ -459,7 +460,7 @@ function realWorldExample() {
      // 创建对话
      const { title } = await request.json();
      const conversation = await db.insert(conversations).values({
-       userId: session.user.id,
+       userId: user.id,
        title,
      });
 
@@ -470,13 +471,24 @@ function realWorldExample() {
 
    'use client';
 
-   import { useSession } from '@/lib/auth-client';
+   import { createAuthClient } from '@neondatabase/neon-js/auth/next';
+   import { useState, useEffect } from 'react';
+
+   const authClient = createAuthClient();
 
    export function ConversationActions({ conversationId }: { conversationId: string }) {
-     const { data: session } = useSession();
+     const [user, setUser] = useState(null);
+
+     useEffect(() => {
+       authClient.getSession().then((result) => {
+         if (result.data?.user) {
+           setUser(result.data.user);
+         }
+       });
+     }, []);
 
      // 注意：这里只是 UI 层面的隐藏，实际权限检查在服务端
-     const canDelete = session?.user?.role !== 'member';
+     const canDelete = user?.role !== 'member';
 
      return (
        <div>

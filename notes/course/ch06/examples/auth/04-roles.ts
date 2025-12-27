@@ -488,16 +488,16 @@ function realWorldExample() {
 
    'use server';
 
-   import { auth } from '@/lib/auth';
+   import { neonAuth } from '@neondatabase/neon-js/auth/next';
    import { getUserRole } from '@/lib/auth/roles';
 
    export async function deleteConversation(conversationId: string) {
-     const session = await auth();
-     if (!session) {
+     const { session, user } = await neonAuth();
+     if (!session || !user) {
        throw new Error('Unauthorized');
      }
 
-     const role = await getUserRole(session.user.id);
+     const role = await getUserRole(user.id);
 
      if (role !== 'system_admin') {
        // 检查是否是对话所有者
@@ -505,7 +505,7 @@ function realWorldExample() {
          where: eq(conversations.id, conversationId),
        });
 
-       if (conversation?.userId !== session.user.id) {
+       if (conversation?.userId !== user.id) {
          throw new Error('Forbidden');
        }
      }
@@ -516,21 +516,22 @@ function realWorldExample() {
 
 4. 在 API 路由中使用：
 
+   import { neonAuth } from '@neondatabase/neon-js/auth/next';
    import { getUserRole } from '@/lib/auth/roles';
 
    export async function GET(request: Request) {
-     const session = await auth.api.getSession({ headers: request.headers });
-     if (!session) {
+     const { session, user } = await neonAuth();
+     if (!session || !user) {
        return Response.json({ error: 'Unauthorized' }, { status: 401 });
      }
 
-     const role = await getUserRole(session.user.id);
+     const role = await getUserRole(user.id);
 
      return Response.json({
        user: {
-         id: session.user.id,
-         email: session.user.email,
-         name: session.user.name,
+         id: user.id,
+         email: user.email,
+         name: user.name,
          role,
        },
      });
