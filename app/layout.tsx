@@ -1,32 +1,7 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Bodoni_Moda, Montserrat, Arvo } from "next/font/google";
 import "./v2.css";
 import { Header } from "@/components/v2/header";
 import { V2Footer } from "@/components/v2/footer";
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  variable: "--font-playfair",
-});
-
-const bodoniModa = Bodoni_Moda({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  variable: "--font-bodoni",
-});
-
-const montserrat = Montserrat({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  variable: "--font-montserrat",
-});
-
-const arvo = Arvo({
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  variable: "--font-arvo",
-});
 
 export const metadata: Metadata = {
   title: {
@@ -50,7 +25,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body className={`antialiased min-h-screen flex flex-col ${playfair.variable} ${bodoniModa.variable} ${montserrat.variable} ${arvo.variable}`}>
+      <head>
+        {/* 思源黑体 - 国内 CDN */}
+        <link rel="preconnect" href="https://fonts.loli.net" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.loli.net/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="antialiased min-h-screen flex flex-col">
         <Header />
         <main className="flex-1">{children}</main>
         <V2Footer />

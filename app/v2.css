@@ -181,8 +181,8 @@
   --font-serif: ui-serif, Georgia, "Songti SC", "SimSun", serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
 
-  /* === 艺术字体 - 用于 ZHUHE祝赫 品牌名（粗板岩衬线风格） === */
-  --font-artistic: var(--font-arvo), "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  /* === 品牌字体 - 用于 ZHUHE祝赫（思源黑体，中英文统一） === */
+  --font-brand: "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
 
   /* === 基础颜色 === */
   --color-background: var(--color-background);
@@ -289,8 +289,8 @@
   }
 
   /* === 字体工具类 === */
-  .font-artistic {
-    font-family: var(--font-artistic);
+  .font-brand {
+    font-family: var(--font-brand);
   }
 
   /* === 下拉指示器动画 === */
