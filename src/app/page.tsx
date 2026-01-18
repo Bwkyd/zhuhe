@@ -39,7 +39,7 @@ export default function V2HomePage() {
             <div className="max-w-3xl mx-auto space-y-4 md:space-y-8 pt-12 md:pt-0">
               {/* 品牌标语 - 主标题 */}
               <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-white tracking-wide">
-                让优雅随行，美好自然生长
+                让优雅随行，美好自然而生
               </h1>
 
               {/* 副标题 */}
