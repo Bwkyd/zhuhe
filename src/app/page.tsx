@@ -44,7 +44,7 @@ export default function V2HomePage() {
 
               {/* 副标题 */}
               <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-medium text-white/95">
-                做独特的自己，不刻意，却闪耀
+                做独特的自己，不完美，但闪耀
               </p>
 
               {/* 描述文字 */}
