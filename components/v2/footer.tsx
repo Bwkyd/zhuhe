@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 const navItems = [
   { href: "/", label: "首页" },
   { href: "/brand-story", label: "品牌故事" },
-  { href: "/team", label: "设计团队" },
+  { href: "/team", label: "公司团队" },
   { href: "/contact", label: "联系我们" },
 ];
 
@@ -19,9 +19,9 @@ export function V2Footer() {
               ZHUHE祝赫
             </span>
             <p className="text-xs md:text-sm text-muted-foreground leading-relaxed mb-2 md:mb-4">
-              专注女装电商直播领域，用心打造每一件作品
+              专注高端女装领域，用心打造每一件作品
             </p>
-            <p className="text-xs md:text-sm text-muted-foreground">杭州市临平区</p>
+            <p className="text-xs md:text-sm text-muted-foreground">浙江省杭州市临平区</p>
           </div>
 
           {/* 快捷链接 */}

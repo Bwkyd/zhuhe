@@ -5,8 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { teamMembers } from "@/data/company";
 
 export const metadata: Metadata = {
-  title: "设计团队",
-  description: "认识 ZHUHE祝赫服饰的核心设计团队成员",
+  title: "公司团队",
+  description: "认识 ZHUHE祝赫服饰的核心公司团队成员",
 };
 
 export default function TeamPage() {
@@ -22,7 +22,7 @@ export default function TeamPage() {
 
         <div className="container mx-auto px-2 md:px-4 text-center relative z-10 pt-10 md:pt-0">
           <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-4 text-white">
-            设计团队
+            公司团队
           </h1>
           <p className="text-base md:text-lg text-white/90 max-w-none md:max-w-2xl mx-auto px-1 md:px-0">
             认识我们充满创意与热情的核心团队
@@ -42,7 +42,7 @@ export default function TeamPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
             <p className="text-sm md:text-lg text-muted-foreground leading-relaxed">
-              祝赫服饰拥有一支年轻而专业的设计团队，团队成员来自服装设计、时尚营销等不同领域，
+              祝赫服饰拥有一支年轻而专业的团队，团队成员来自服装设计、时尚营销等不同领域，
               对女装设计有着共同的热爱与追求。我们相信，优秀的团队是创造卓越产品的基础。
             </p>
           </div>

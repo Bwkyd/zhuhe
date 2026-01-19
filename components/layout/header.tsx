@@ -16,7 +16,7 @@ const navItems = [
   { href: "/", label: "首页" },
   { href: "/culture", label: "企业文化" },
   { href: "/history", label: "发展历程" },
-  { href: "/team", label: "设计团队" },
+  { href: "/team", label: "公司团队" },
   { href: "/contact", label: "联系我们" },
 ];
 

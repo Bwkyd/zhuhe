@@ -5,12 +5,12 @@ import { V2Footer } from "@/components/v2/footer";
 
 export const metadata: Metadata = {
   title: {
-    default: "ZHUHE祝赫 - 杭州女装电商直播领先品牌",
+    default: "ZHUHE祝赫 - 杭州高端女装领先品牌",
     template: "%s | ZHUHE祝赫",
   },
   description:
-    "杭州ZHUHE祝赫服饰官方网站，专注女装电商直播领域，了解我们的品牌故事，设计团队。",
-  keywords: ["ZHUHE祝赫", "女装", "电商直播", "杭州", "服装设计", "时尚女装", "直播带货"],
+    "杭州ZHUHE祝赫服饰官方网站，专注高端女装领域，了解我们的品牌故事，公司团队。",
+  keywords: ["ZHUHE祝赫", "高端女装", "杭州", "服装设计", "时尚女装", "品质女装"],
   openGraph: {
     type: "website",
     locale: "zh_CN",

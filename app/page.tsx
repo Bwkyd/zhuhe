@@ -143,7 +143,7 @@ export default function V2HomePage() {
               企业实力
             </h2>
             <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
-              数年深耕女装电商直播领域，用心打造每一件作品
+              深耕高端女装领域，用心打造每一件作品
             </p>
           </div>
 

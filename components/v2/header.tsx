@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/", label: "首页" },
   { href: "/brand-story", label: "品牌故事" },
-  { href: "/team", label: "设计团队" },
+  { href: "/team", label: "公司团队" },
   { href: "/contact", label: "联系我们" },
 ];
 
@@ -29,9 +29,14 @@ export function Header() {
           {/* Logo */}
           <Link
             href="/"
-            className="text-xl lg:text-2xl font-semibold text-foreground tracking-wide font-brand hover:opacity-80 transition-opacity"
+            className="hover:opacity-80 transition-opacity"
           >
-            ZHUHE祝赫
+            <div className="text-xl lg:text-2xl font-semibold text-foreground tracking-wide font-brand">
+              ZHUHE祝赫
+            </div>
+            <div className="text-[10px] lg:text-xs text-muted-foreground tracking-[0.28em] lg:tracking-[0.35em]">
+              你的温柔，自有力量
+            </div>
           </Link>
 
           {/* Desktop Navigation */}

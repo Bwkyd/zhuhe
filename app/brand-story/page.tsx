@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Gem, Sparkles, Heart, Shield, Target, Eye } from "lucide-react";
+import { Gem, Sparkles, Heart, Shield, Target, Eye, Zap, Scale, Smile } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { companyInfo } from "@/data/company";
 import { milestones } from "@/data/company";
@@ -9,6 +9,9 @@ const iconMap: Record<string, React.ElementType> = {
   Sparkles,
   Heart,
   Shield,
+  Zap,
+  Scale,
+  Smile,
 };
 
 export const metadata: Metadata = {
@@ -53,16 +56,16 @@ export default function BrandStoryPage() {
             </h2>
             <div className="space-y-3 md:space-y-6 text-sm md:text-lg text-muted-foreground leading-relaxed">
               <p>
-                祝赫服饰诞生于杭州这座充满创新活力的城市。创始团队怀揣着对女装设计的热爱和对时尚的追求，
-                在电商直播蓬勃发展的时代背景下，开启了品牌创业之旅。
+                「祝赫」，寓意着对每一位女性的美好祝愿——愿你光芒万丈，赫赫生辉。
+                我们相信，每一位女性都值得拥有让自己闪闪发光的服饰，都值得被认真对待、被用心呵护。
               </p>
               <p>
-                "祝赫"二字，寓意着对每一位女性的美好祝愿。我们相信，每一位女性都值得拥有让自己闪闪发光的服饰。
-                我们用心设计每一件衣服，希望它能陪伴女性走过人生的每一个重要时刻。
+                从一针一线的匠心启蒙，到如今的高端女装品牌，二十余年的坚守源于一个简单的信念：
+                让服饰成为女性感知爱、表达自信的媒介，陪伴每一次智慧成长与勇敢绽放。
               </p>
               <p>
-                从最初的小团队到如今拥有专业设计师团队，祝赫服饰始终坚持原创设计、品质优先的理念，
-                用匠心打造每一件作品，赢得了数十万粉丝的喜爱与信任。
+                祝赫立志成为一家「因爱而生」的幸福企业，不仅为客户创造美的体验，
+                更希望与每一位伙伴共同成长，在公平与快乐的土壤上，收获属于我们的阳光人生。
               </p>
             </div>
           </div>
@@ -158,18 +161,18 @@ export default function BrandStoryPage() {
         </div>
       </section>
 
-      {/* 价值观 */}
+      {/* 价值观·扬善 */}
       <section className="py-6 md:py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-4 md:mb-12">
-            <h2 className="text-xl md:text-3xl lg:text-4xl font-bold mb-2 md:mb-4">核心价值观</h2>
+            <h2 className="text-xl md:text-3xl lg:text-4xl font-bold mb-2 md:mb-4">价值观·扬善</h2>
             <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
-              这些信念指引着我们的每一个决策
+              我们的核心是以利他之心和绝对坦诚，勇敢创新，在公平的土壤上，收获共同成长与快乐
             </p>
           </div>
 
-          <div className="flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-6 lg:gap-8 max-w-5xl mx-auto">
-            {companyInfo.values.map((value, index) => {
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 lg:gap-8 max-w-5xl mx-auto">
+            {companyInfo.brandValues.map((value, index) => {
               const Icon = iconMap[value.icon] || Gem;
               return (
                 <Card
@@ -178,20 +181,16 @@ export default function BrandStoryPage() {
                     transition-all duration-300 hover:-translate-y-1
                     border border-border/50 overflow-hidden"
                 >
-                  <CardContent className="p-3 md:p-6 lg:p-8">
-                    <div className="flex gap-3 md:gap-4 items-center md:items-start">
-                      <div className="w-8 h-8 md:w-12 md:h-12 rounded-md md:rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
-                        <Icon className="h-4 w-4 md:h-6 md:w-6 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm md:text-xl font-semibold mb-0.5 md:mb-2">
-                          {value.title}
-                        </h3>
-                        <p className="text-xs md:text-base text-muted-foreground leading-relaxed">
-                          {value.description}
-                        </p>
-                      </div>
+                  <CardContent className="p-3 md:p-6 lg:p-8 text-center">
+                    <div className="w-10 h-10 md:w-14 md:h-14 rounded-lg md:rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-2 md:mb-4 group-hover:bg-primary/15 transition-colors">
+                      <Icon className="h-5 w-5 md:h-7 md:w-7 text-primary" />
                     </div>
+                    <h3 className="text-sm md:text-xl font-semibold mb-1 md:mb-2">
+                      {value.title}
+                    </h3>
+                    <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
+                      {value.description}
+                    </p>
                   </CardContent>
                 </Card>
               );
