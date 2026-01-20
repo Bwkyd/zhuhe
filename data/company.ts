@@ -11,22 +11,22 @@ export const companyInfo = {
   values: [
     {
       title: "匠心品质",
-      description: "精选优质面料，注重每一个细节，打造经得起时间考验的品质服饰",
+      description: "精工细作，品质为本",
       icon: "Gem",
     },
     {
       title: "时尚创新",
-      description: "紧跟国际潮流趋势，融合东方美学元素，创造独特的设计风格",
+      description: "潮流融合，东方美学",
       icon: "Sparkles",
     },
     {
       title: "客户至上",
-      description: "倾听客户需求，提供贴心服务，让每位顾客都能满意而归",
+      description: "贴心服务，顾客至上",
       icon: "Heart",
     },
     {
       title: "诚信经营",
-      description: "坚持诚实守信，品质保证，建立长期的信任关系",
+      description: "诚实守信，品质保证",
       icon: "Shield",
     },
   ],
