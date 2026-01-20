@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "首页" },
+  { href: "/products", label: "品质优选" },
   { href: "/culture", label: "企业文化" },
   { href: "/history", label: "发展历程" },
   { href: "/team", label: "公司团队" },

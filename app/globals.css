@@ -4,235 +4,138 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* === 基础色 - 黑白极简 === */
-  --background: oklch(1 0 0);              /* 纯白背景 #FFFFFF */
-  --foreground: oklch(0 0 0);              /* 纯黑文字 #000000 */
+  /* === 优衣库风格 - 简约黑白灰 === */
 
-  /* === 卡片和弹出层 === */
-  --card: oklch(1 0 0);                    /* 纯白卡片 */
-  --card-foreground: oklch(0 0 0);         /* 纯黑文字 */
-  --popover: oklch(1 0 0);                 /* 纯白弹出层 */
-  --popover-foreground: oklch(0 0 0);
+  /* 基础色 */
+  --background: oklch(1 0 0);              /* 纯白背景 */
+  --foreground: oklch(0.14 0 0);           /* 主文字 gray-900 */
 
-  /* === 品牌色 - 金棕色系 === */
-  --primary: oklch(0.54 0.10 65);          /* 金棕色 #8F6A36 */
+  /* 卡片和弹出层 */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.14 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.14 0 0);
+
+  /* 品牌色 = 纯黑（优衣库风格核心） */
+  --primary: oklch(0 0 0);                 /* 纯黑 - 按钮、强调 */
   --primary-foreground: oklch(1 0 0);      /* 白色文字 */
-  --primary-dark: oklch(0.38 0.08 55);     /* 深棕色 #583A1F */
-  --primary-light: oklch(0.68 0.08 65);    /* 浅金棕色 */
 
-  /* === 功能色 - 金棕强调色 === */
-  --accent: oklch(0.68 0.08 65);          /* 浅金棕色 */
-  --accent-foreground: oklch(0 0 0);       /* 黑色文字 */
+  /* 强调色 - 浅灰背景 */
+  --accent: oklch(0.96 0 0);               /* gray-100 */
+  --accent-foreground: oklch(0.14 0 0);
 
-  /* === 中性灰色系 === */
-  --muted: oklch(0.96 0 0);                /* 浅灰背景 */
-  --muted-foreground: oklch(0.48 0 0);     /* 深灰文字 #666666 */
-  --secondary: oklch(0.65 0 0);            /* 中灰 #949494 */
-  --secondary-foreground: oklch(0 0 0);
+  /* 中性灰 */
+  --muted: oklch(0.96 0 0);                /* gray-100 背景 */
+  --muted-foreground: oklch(0.45 0 0);     /* gray-500 文字 */
+  --secondary: oklch(0.64 0 0);            /* gray-400 */
+  --secondary-foreground: oklch(1 0 0);
 
-  /* === 边框与输入框 === */
-  --border: oklch(0.90 0 0);               /* 浅灰边框 */
-  --input: oklch(0.98 0 0);                /* 输入框背景 */
-  --ring: oklch(0.54 0.10 65);             /* 焦点环 - 金棕色 */
+  /* 边框 */
+  --border: oklch(0.91 0 0);               /* gray-200 */
+  --input: oklch(0.96 0 0);
+  --ring: oklch(0 0 0);                    /* 焦点环 = 黑色 */
 
-  /* === 功能色 === */
-  --destructive: oklch(0.55 0.18 28);      /* 错误红 */
+  /* 功能色 */
+  --destructive: oklch(0.55 0.2 25);
   --destructive-foreground: oklch(1 0 0);
 
-  --radius: 0.875rem;                      /* 14px - 增大圆角 */
+  --radius: 0;                             /* 优衣库风格：直角 */
 
-  /* === 阴影系统 === */
-  --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.05);
-  --shadow-sm: 0 2px 4px oklch(0 0 0 / 0.06),
-               0 1px 2px oklch(0 0 0 / 0.04);
-  --shadow-md: 0 4px 8px oklch(0 0 0 / 0.08),
-               0 2px 4px oklch(0 0 0 / 0.05);
-  --shadow-lg: 0 8px 16px oklch(0 0 0 / 0.10),
-               0 4px 8px oklch(0 0 0 / 0.06);
-  --shadow-xl: 0 12px 24px oklch(0 0 0 / 0.12),
-               0 6px 12px oklch(0 0 0 / 0.08);
-  --shadow-2xl: 0 20px 40px oklch(0 0 0 / 0.15);
+  /* 简洁阴影 */
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.05);
+  --shadow-card: 0 1px 3px oklch(0 0 0 / 0.04);
+  --shadow-card-hover: 0 4px 12px oklch(0 0 0 / 0.08);
 
-  /* 卡片专用阴影 */
-  --shadow-card: 0 2px 8px oklch(0 0 0 / 0.06),
-                 0 1px 4px oklch(0 0 0 / 0.03);
-  --shadow-card-hover: 0 8px 24px oklch(0 0 0 / 0.10),
-                       0 4px 12px oklch(0 0 0 / 0.06);
+  /* 图表 */
+  --chart-1: oklch(0.14 0 0);
+  --chart-2: oklch(0.35 0 0);
+  --chart-3: oklch(0.55 0 0);
+  --chart-4: oklch(0.75 0 0);
+  --chart-5: oklch(0.91 0 0);
 
-  /* 品牌色阴影（金棕色按钮悬停） */
-  --shadow-primary: 0 4px 12px oklch(0.54 0.10 65 / 0.25);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* 侧边栏 */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.14 0 0);
+  --sidebar-primary: oklch(0 0 0);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.96 0 0);
+  --sidebar-accent-foreground: oklch(0.14 0 0);
+  --sidebar-border: oklch(0.91 0 0);
+  --sidebar-ring: oklch(0 0 0);
 
-  /* === 渐变色板 === */
-  /* Hero 区域渐变 - 白色到浅灰 */
-  --gradient-hero: linear-gradient(145deg,
-    oklch(1 0 0) 0%,              /* 纯白起点 */
-    oklch(0.98 0 0) 50%,          /* 极浅灰中间 */
-    oklch(0.96 0 0) 100%          /* 浅灰终点 */
-  );
+  /* 简洁渐变 - 仅用于微妙背景 */
+  --gradient-hero: oklch(0.98 0 0);
+  --gradient-section: oklch(0.98 0 0);
 
-  /* 卡片悬停渐变 */
-  --gradient-card: linear-gradient(135deg,
-    oklch(1 0 0) 0%,
-    oklch(0.98 0 0) 100%
-  );
-
-  /* 按钮渐变 - 金棕色系 */
-  --gradient-button: linear-gradient(135deg,
-    oklch(0.56 0.10 65) 0%,       /* 金棕色起点 */
-    oklch(0.48 0.10 60) 100%      /* 深金棕终点 */
-  );
-
-  /* 品牌光晕 - 金棕色 */
-  --gradient-glow: radial-gradient(circle at center,
-    oklch(0.54 0.10 65 / 0.15) 0%,
-    oklch(0.54 0.10 65 / 0) 70%
-  );
-
-  /* Section 背景渐变 - 极简灰阶 */
-  --gradient-section: linear-gradient(180deg,
-    oklch(1 0 0) 0%,              /* 纯白 */
-    oklch(0.97 0 0) 100%          /* 极浅灰 */
-  );
-
-  /* === 过渡动画 === */
-  --transition-fast: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-smooth: 350ms cubic-bezier(0.4, 0, 0.6, 1);
+  /* 过渡 */
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
 }
 
 .dark {
-  /* === 基础色 - 深色模式 === */
-  --background: oklch(0.12 0 0);           /* 深灰背景 */
-  --foreground: oklch(0.95 0 0);           /* 浅白文字 */
-
-  /* === 卡片和弹出层 === */
-  --card: oklch(0.16 0 0);                 /* 深灰卡片 */
-  --card-foreground: oklch(0.95 0 0);
-  --popover: oklch(0.18 0 0);
-  --popover-foreground: oklch(0.95 0 0);
-
-  /* === 品牌色 - 金棕色（深色模式下更亮） === */
-  --primary: oklch(0.62 0.10 65);          /* 亮金棕色 */
-  --primary-foreground: oklch(0.12 0 0);   /* 深色文字 */
-  --primary-dark: oklch(0.48 0.10 65);     /* 亮深棕色 */
-  --primary-light: oklch(0.75 0.10 65);    /* 亮浅金棕 */
-
-  /* === 功能色 - 金棕强调色 === */
-  --accent: oklch(0.75 0.10 65);          /* 亮浅金棕色 */
-
-  /* === 中性灰色系 === */
-  --muted: oklch(0.20 0 0);
-  --muted-foreground: oklch(0.65 0 0);
+  --background: oklch(0.10 0 0);
+  --foreground: oklch(0.92 0 0);
+  --card: oklch(0.14 0 0);
+  --card-foreground: oklch(0.92 0 0);
+  --popover: oklch(0.14 0 0);
+  --popover-foreground: oklch(0.92 0 0);
+  --primary: oklch(1 0 0);                 /* 深色模式下反转为白色 */
+  --primary-foreground: oklch(0.10 0 0);
+  --accent: oklch(0.18 0 0);
+  --accent-foreground: oklch(0.92 0 0);
+  --muted: oklch(0.18 0 0);
+  --muted-foreground: oklch(0.55 0 0);
   --secondary: oklch(0.45 0 0);
-  --secondary-foreground: oklch(0.95 0 0);
-
-  /* === 边框 === */
-  --border: oklch(0.28 0 0);
-  --input: oklch(0.25 0 0);
-  --ring: oklch(0.62 0.10 65);             /* 金棕色焦点环 */
-
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.54 0.10 65);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  --secondary-foreground: oklch(0.10 0 0);
+  --border: oklch(0.25 0 0);
+  --input: oklch(0.18 0 0);
+  --ring: oklch(1 0 0);
+  --chart-1: oklch(0.92 0 0);
+  --chart-2: oklch(0.70 0 0);
+  --chart-3: oklch(0.55 0 0);
+  --chart-4: oklch(0.35 0 0);
+  --chart-5: oklch(0.18 0 0);
+  --sidebar: oklch(0.10 0 0);
+  --sidebar-foreground: oklch(0.92 0 0);
+  --sidebar-primary: oklch(1 0 0);
+  --sidebar-primary-foreground: oklch(0.10 0 0);
+  --sidebar-accent: oklch(0.18 0 0);
+  --sidebar-accent-foreground: oklch(0.92 0 0);
+  --sidebar-border: oklch(0.25 0 0);
+  --sidebar-ring: oklch(1 0 0);
 }
 
 @theme inline {
-  /* === 字体系统 === */
+  /* 字体 */
   --font-sans: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-  --font-serif: ui-serif, Georgia, "Songti SC", "SimSun", serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+  --font-serif: ui-serif, Georgia, "Songti SC", serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* === 基础颜色 === */
+  /* 颜色映射 */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
-
-  /* === 品牌色 === */
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
-  --color-primary-dark: var(--primary-dark);
-  --color-primary-light: var(--primary-light);
-
-  /* === 功能色 === */
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
-
-  /* === 中性色 === */
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-
-  /* === 边框与输入 === */
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-
-  /* === 图表颜色 === */
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-
-  /* === 圆角系统 === */
-  --radius-none: 0;
-  --radius-sm: 0.375rem;      /* 6px */
-  --radius-md: 0.5rem;        /* 8px */
-  --radius-lg: 0.875rem;      /* 14px - 增大圆角 */
-  --radius-xl: 1.25rem;       /* 20px */
-  --radius-2xl: 1.75rem;      /* 28px */
-  --radius-3xl: 2.5rem;       /* 40px */
-  --radius-full: 9999px;
-
-  /* === 间距系统 === */
-  --spacing-0: 0;
-  --spacing-px: 1px;
-  --spacing-0\.5: 0.125rem;   /* 2px */
-  --spacing-1: 0.25rem;       /* 4px */
-  --spacing-2: 0.5rem;        /* 8px */
-  --spacing-3: 0.75rem;       /* 12px */
-  --spacing-4: 1rem;          /* 16px */
-  --spacing-5: 1.25rem;       /* 20px */
-  --spacing-6: 1.5rem;        /* 24px */
-  --spacing-8: 2rem;          /* 32px */
-  --spacing-10: 2.5rem;       /* 40px */
-  --spacing-12: 3rem;         /* 48px */
-  --spacing-16: 4rem;         /* 64px */
-  --spacing-20: 5rem;         /* 80px */
-  --spacing-24: 6rem;         /* 96px */
-  --spacing-32: 8rem;         /* 128px */
-
-  /* === 侧边栏颜色 === */
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -241,6 +144,12 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* 圆角 - 优衣库风格使用直角或微圆角 */
+  --radius-sm: 0.125rem;      /* 2px */
+  --radius-md: 0.25rem;       /* 4px */
+  --radius-lg: 0.375rem;      /* 6px */
+  --radius-xl: 0.5rem;        /* 8px */
 }
 
 @layer base {

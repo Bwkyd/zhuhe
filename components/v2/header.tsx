@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "首页" },
+  { href: "/products", label: "品质优选" },
   { href: "/brand-story", label: "品牌故事" },
   { href: "/team", label: "公司团队" },
   { href: "/contact", label: "联系我们" },
@@ -19,22 +19,15 @@ export function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header
-      className={cn(
-        "v2-header fixed top-0 left-0 right-0 z-[99999] transition-all duration-300 bg-background/95 backdrop-blur-sm border-b border-border shadow-sm"
-      )}
-    >
+    <header className="fixed top-0 left-0 right-0 z-[99999] bg-white border-b border-gray-200">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-20 lg:h-20">
+        <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
-          <Link
-            href="/"
-            className="hover:opacity-80 transition-opacity"
-          >
-            <div className="text-xl lg:text-2xl font-semibold text-foreground tracking-wide font-brand">
+          <Link href="/" className="hover:opacity-70 transition-opacity">
+            <div className="text-lg lg:text-xl font-medium text-gray-900 tracking-wide">
               ZHUHE祝赫
             </div>
-            <div className="text-[10px] lg:text-xs text-muted-foreground tracking-[0.28em] lg:tracking-[0.35em]">
+            <div className="text-[10px] text-gray-400 tracking-[0.2em]">
               你的温柔，自有力量
             </div>
           </Link>
@@ -46,12 +39,10 @@ export function Header() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "text-base text-foreground/80 hover:text-foreground transition-all duration-200 whitespace-nowrap",
-                  "relative after:absolute after:bottom-[-4px] after:left-0",
-                  "after:w-0 after:h-[2px] after:bg-primary",
-                  "after:transition-all after:duration-300",
-                  "hover:after:w-full",
-                  pathname === item.href && "text-primary font-medium after:w-full"
+                  "text-sm transition-colors",
+                  pathname === item.href
+                    ? "text-gray-900 font-medium"
+                    : "text-gray-500 hover:text-gray-900"
                 )}
               >
                 {item.label}
@@ -60,36 +51,33 @@ export function Header() {
           </nav>
 
           {/* Mobile Navigation Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
+          <button
+            className="md:hidden p-2 -mr-2"
             onClick={() => setOpen(!open)}
           >
-            {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            <span className="sr-only">打开菜单</span>
-          </Button>
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
       </div>
 
       {/* Mobile Dropdown Menu */}
       <div
         className={cn(
-          "md:hidden overflow-hidden transition-all duration-300 ease-in-out bg-background border-b border-border",
-          open ? "max-h-64 opacity-100" : "max-h-0 opacity-0 border-b-0"
+          "md:hidden overflow-hidden transition-all duration-200 bg-white border-t border-gray-100",
+          open ? "max-h-64" : "max-h-0"
         )}
       >
-        <nav className="container mx-auto px-4 py-4 flex flex-col space-y-1">
+        <nav className="container mx-auto px-4 py-2">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               onClick={() => setOpen(false)}
               className={cn(
-                "text-sm font-medium transition-colors py-2 px-3 rounded-lg",
+                "block py-3 text-sm border-b border-gray-100 last:border-0",
                 pathname === item.href
-                  ? "text-primary bg-primary/5"
-                  : "text-foreground/80 hover:text-foreground hover:bg-muted"
+                  ? "text-gray-900 font-medium"
+                  : "text-gray-500"
               )}
             >
               {item.label}
