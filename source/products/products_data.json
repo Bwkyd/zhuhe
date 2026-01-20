@@ -1,0 +1,68 @@
+{
+  "website": "https://m.zhuhe76876.com/h-col-103.html",
+  "category": "衬衣系列",
+  "extraction_date": "2026-01-20",
+  "products": [
+    {
+      "id": "3C24076",
+      "name": "ZHUHE祝赫-秋上新翻领明线工艺衬衫百搭衬衣",
+      "code": "3C24076",
+      "material": "聚酯纤维",
+      "colors": ["白色", "黑色"],
+      "price": "￥2199.00",
+      "brand": "ZHUHE祝赫",
+      "series": "秋上新",
+      "style": "翻领明线工艺",
+      "image_url": "https://32741181.s21i.faiusr.com/2/ABUIABACGAAgtdfRtgYo8t3OKzCEDDiEDA!450x450.jpg",
+      "image_filename": "3C24076.jpg"
+    },
+    {
+      "id": "3T2256",
+      "name": "ZHUHE祝赫-翻领腰间立体裁剪百搭无袖衬衫",
+      "code": "3T2256",
+      "material": "粘胶纤维",
+      "colors": ["白色", "黑色"],
+      "price": "￥1688.00",
+      "brand": "ZHUHE祝赫",
+      "series": "立体裁剪",
+      "style": "翻领腰间立体裁剪",
+      "image_url": "https://32741181.s21i.faiusr.com/2/ABUIABACGAAg6dXRtgYoqLWHlgYw3As43As!450x450.jpg",
+      "image_filename": "3T2256.jpg"
+    },
+    {
+      "id": "3C24033",
+      "name": "ZHUHE祝赫-秋上新翻领衬衫挺阔有型自带肌理感衬衣",
+      "code": "3C24033",
+      "material": "粘胶纤维",
+      "colors": ["酒红", "驼色", "红灰色"],
+      "price": "￥1988.00",
+      "brand": "ZHUHE祝赫",
+      "series": "秋上新",
+      "style": "翻领挺阔有型",
+      "image_url": "https://32741181.s21i.faiusr.com/2/ABUIABACGAAg89HRtgYooY3DzAQwqA04qA0!450x450.jpg",
+      "image_filename": "3C24033.jpg"
+    },
+    {
+      "id": "3C24075",
+      "name": "ZHUHE祝赫-秋上新宽松翻领简约条纹衬衣",
+      "code": "3C24075",
+      "material": "聚酯纤维",
+      "colors": ["藏青色", "砖红色"],
+      "price": "￥1899.00",
+      "brand": "ZHUHE祝赫",
+      "series": "秋上新",
+      "style": "宽松翻领简约条纹",
+      "image_url": "https://32741181.s21i.faiusr.com/2/ABUIABACGAAg9djRtgYokPCxbDCDDDiDDA!450x450.jpg",
+      "image_filename": "3C24075.jpg"
+    }
+  ],
+  "summary": {
+    "total_products": 4,
+    "price_range": {
+      "min": "￥1688.00",
+      "max": "￥2199.00"
+    },
+    "materials": ["聚酯纤维", "粘胶纤维"],
+    "categories": ["翻领明线工艺", "立体裁剪", "挺阔有型", "简约条纹"]
+  }
+}

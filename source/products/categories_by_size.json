@@ -1,0 +1,45 @@
+{
+  "分类方式": "按尺码分类",
+  "分类数据": {
+    "标准尺码 (M-L-XL)": [
+      {
+        "id": "3C24076",
+        "name": "ZHUHE祝赫-秋上新翻领明线工艺衬衫百搭衬衣",
+        "code": "3C24076",
+        "price": "￥2199.00",
+        "material": "聚酯纤维",
+        "sizes": ["M", "L", "XL"],
+        "image_count": 8
+      },
+      {
+        "id": "3C24033",
+        "name": "ZHUHE祝赫-秋上新翻领衬衫挺阔有型自带肌理感衬衣",
+        "code": "3C24033",
+        "price": "￥1988.00",
+        "material": "粘胶纤维",
+        "sizes": ["M", "L", "XL"],
+        "image_count": 6
+      },
+      {
+        "id": "3C24075",
+        "name": "ZHUHE祝赫-秋上新宽松翻领简约条纹衬衣",
+        "code": "3C24075",
+        "price": "￥1899.00",
+        "material": "聚酯纤维",
+        "sizes": ["M", "L", "XL"],
+        "image_count": 8
+      }
+    ],
+    "大尺码 (L-XXL-XXXL)": [
+      {
+        "id": "3T2256",
+        "name": "ZHUHE祝赫-翻领腰间立体裁剪百搭无袖衬衫",
+        "code": "3T2256",
+        "price": "￥1688.00",
+        "material": "粘胶纤维",
+        "sizes": ["L", "XL", "XXL", "XXXL"],
+        "image_count": 8
+      }
+    ]
+  }
+}

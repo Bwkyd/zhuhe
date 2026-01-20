@@ -6,7 +6,7 @@ const navItems = [
   { href: "/", label: "首页" },
   { href: "/culture", label: "企业文化" },
   { href: "/history", label: "发展历程" },
-  { href: "/team", label: "设计团队" },
+  { href: "/team", label: "公司团队" },
   { href: "/contact", label: "联系我们" },
 ];
 
@@ -19,10 +19,10 @@ export function Footer() {
           <div>
             <h3 className="text-lg font-semibold mb-4">祝赫服饰</h3>
             <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-              专注女装电商直播领域，用心打造每一件作品
+              专注高端女装领域，用心打造每一件作品
             </p>
             <p className="text-sm text-muted-foreground">
-              杭州市临平区
+              浙江省杭州市临平区
             </p>
           </div>
 

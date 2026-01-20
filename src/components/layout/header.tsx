@@ -14,9 +14,10 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "首页" },
+  { href: "/products", label: "品质优选" },
   { href: "/culture", label: "企业文化" },
   { href: "/history", label: "发展历程" },
-  { href: "/team", label: "设计团队" },
+  { href: "/team", label: "公司团队" },
   { href: "/contact", label: "联系我们" },
 ];
 
@@ -49,9 +50,7 @@ export function Header() {
             href="/"
             className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
           >
-            <span className="text-2xl lg:text-3xl font-bold text-foreground tracking-wide">
-              祝赫服饰
-            </span>
+            <img src="/logo.png" alt="祝赫服饰" className="h-8 lg:h-10" />
           </Link>
 
           {/* Desktop Navigation */}
