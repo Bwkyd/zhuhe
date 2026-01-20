@@ -50,9 +50,7 @@ export function Header() {
             href="/"
             className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
           >
-            <span className="text-2xl lg:text-3xl font-bold text-foreground tracking-wide">
-              祝赫服饰
-            </span>
+            <img src="/logo.png" alt="祝赫服饰" className="h-8 lg:h-10" />
           </Link>
 
           {/* Desktop Navigation */}

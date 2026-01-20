@@ -24,12 +24,7 @@ export function Header() {
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <Link href="/" className="hover:opacity-70 transition-opacity">
-            <div className="text-lg lg:text-xl font-medium text-gray-900 tracking-wide">
-              ZHUHE祝赫
-            </div>
-            <div className="text-[10px] text-gray-400 tracking-[0.2em]">
-              你的温柔，自有力量
-            </div>
+            <img src="/logo.png" alt="祝赫服饰" className="h-8 lg:h-10" />
           </Link>
 
           {/* Desktop Navigation */}

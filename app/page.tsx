@@ -15,28 +15,22 @@ export default function V2HomePage() {
 
         <div className="absolute inset-0 z-10 flex items-center justify-center">
           <div className="container mx-auto px-4 text-center">
-            <div className="max-w-3xl mx-auto space-y-4 md:space-y-6 pt-12 md:pt-0">
-              <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-normal text-white tracking-wide">
-                让优雅随行，美好自然而生
+            <div className="max-w-3xl mx-auto space-y-6 md:space-y-8 pt-12 md:pt-0">
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-light text-white tracking-wide">
+                你的温柔，自有力量
               </h1>
-              <p className="text-base sm:text-lg md:text-xl text-white/90">
-                做独特的自己，不完美，却闪耀
-              </p>
-              <p className="text-sm text-white/70">
-                为30-45岁的中小个女性打造高品质服饰
-              </p>
 
               <div className="flex flex-row gap-3 justify-center pt-4">
                 <Link
                   href="/brand-story"
-                  className="inline-flex items-center px-6 py-3 bg-white text-gray-900 text-sm font-medium hover:bg-gray-100 transition-colors"
+                  className="inline-flex items-center px-4 py-2 bg-white text-gray-900 text-xs font-medium hover:bg-gray-100 transition-colors"
                 >
                   品牌故事
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  <ArrowRight className="ml-2 h-3 w-3" />
                 </Link>
                 <Link
                   href="/products"
-                  className="inline-flex items-center px-6 py-3 border border-white text-white text-sm font-medium hover:bg-white/10 transition-colors"
+                  className="inline-flex items-center px-4 py-2 border border-white text-white text-xs font-medium hover:bg-white/10 transition-colors"
                 >
                   浏览产品
                 </Link>
